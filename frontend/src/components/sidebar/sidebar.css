@@ -11,13 +11,15 @@
 }
 
 .sideBar .MuiDrawer-paper {
+  top: 60px !important;
   width: 240px;
   box-sizing: border-box;
   background-color: #f4f4f4;
+  height: calc(100% - 60px);
 }
 
 .sidebar-content {
-  padding: 80px 30px 30px;
+  padding: 20px 15px;
 }
 
 .sidebar-heading {
@@ -25,30 +27,50 @@
   color: #9e9e9e;
   font-weight: bold;
   text-transform: uppercase;
-  margin-bottom: 10px;
+  margin: 15px 0 5px 15px;
   text-align: left;
+  padding: 0;
 }
 
 .sidebar-icon {
   color: #3f51b5;
 }
 
-/* You might need to adjust these selectors based on Material-UI's generated classes */
+/* Material-UI overrides */
 .MuiListItem-root {
-  padding-left: 0;
-  padding-right: 0;
+  padding: 8px 15px !important;
+  margin: 2px 0;
+  border-radius: 4px;
 }
 
 .MuiListItemIcon-root {
-  min-width: 40px;
+  min-width: 40px !important;
 }
 
 .MuiListItemText-root {
-  margin-top: 0;
-  margin-bottom: 0;
+  margin: 0 !important;
 }
 
-/* Add any additional styles you need for hover effects, active states, etc. */
+.MuiListItemText-primary {
+  font-size: 14px !important;
+}
+
+/* Hover effects */
 .MuiListItem-root:hover {
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: rgba(63, 81, 181, 0.08) !important;
+}
+
+/* Divider styling */
+.sidebar-divider {
+  margin: 8px 15px !important;
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Active item styling */
+.MuiListItem-root.Mui-selected {
+  background-color: rgba(63, 81, 181, 0.12) !important;
+}
+
+.MuiListItem-root.Mui-selected:hover {
+  background-color: rgba(63, 81, 181, 0.16) !important;
 }

@@ -67,3 +67,31 @@ def get_staff_schedule_details(staff_id, start_date, end_date):
         "is_am": request.is_am,
         "is_pm": request.is_pm
     } for request in approved_requests]
+
+@manager_view.route('/api/managers', methods=['GET'])
+def get_all_managers():
+    try:
+        # Query all employees with role = 3 (managers)
+        managers = Employee.query.filter_by(role=3).all()
+        
+        # Group managers by department
+        department_managers = {}
+        
+        for manager in managers:
+            dept = manager.dept.lower()  # Normalize department names
+            if dept not in department_managers:
+                department_managers[dept] = []
+            
+            # Count team members
+            team_size = Employee.query.filter_by(reporting_manager=manager.staff_id).count()
+            
+            department_managers[dept].append({
+                'staff_id': manager.staff_id,
+                'teamSize': team_size
+            })
+        
+        return jsonify(department_managers), 200
+    
+    except Exception as e:
+        print(f"Error in get_all_managers: {str(e)}")
+        return jsonify({"error": str(e)}), 500

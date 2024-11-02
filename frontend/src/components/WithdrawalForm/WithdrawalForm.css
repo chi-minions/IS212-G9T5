@@ -63,3 +63,12 @@ textarea {
 body {
   font-family: 'Open Sans', sans-serif;
 }
+
+.message {
+  color: #d6960b;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ffc852;
+  border-radius: 4px;
+  background-color: #ffc85244;
+}

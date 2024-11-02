@@ -3,7 +3,7 @@ import flask_testing
 from server import app, db
 from models import *
 import datetime
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 class TestApp(flask_testing.TestCase):
     app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite://"
@@ -210,6 +210,196 @@ class TestWFHRequests(TestApp):
         response = self.client.get("/api/team/140008/schedule?start_date=2025-01-01&end_date=2025-01-31", content_type='application/json')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), [])
+    def test_get_team_pending_requests(self):
+        # Mock the get_full_team function
+        with patch('util.employee.get_full_team') as mock_get_full_team:
+            mock_get_full_team.return_value = [self.employee]
+            
+            response = self.client.get("/api/team-manager/140001/pending-requests", 
+                                    content_type='application/json')
+            
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.get_json(), {
+                "team_size": 1,
+                "pending_requests_count": 1,
+                "team_pending_requests": [
+                    {
+                        "staff_id": 140008,
+                        "pending_requests": [
+                            {
+                                "request_id": '2',
+                                "staff_id": 140008,
+                                "manager_id": 140001,
+                                "specific_date": '2024-10-01',
+                                "is_am": True,
+                                "is_pm": True,
+                                "request_status": 'Pending',
+                                "apply_date": '2024-09-30',
+                                "request_reason": 'Sick'
+                            }
+                        ]
+                    }
+                ]
+            })
+
+    def test_get_team_pending_requests_no_pending(self):
+        # First, let's update the existing pending request to be approved
+        pending_request = WFHRequests.query.filter_by(request_id='2').first()
+        pending_request.request_status = 'Approved'
+        db.session.commit()
+
+        # Create a new WFH request with 'Approved' status
+        approved_request = WFHRequests(
+            request_id='3',
+            staff_id=140008,
+            manager_id=140001,
+            specific_date=datetime.date(2024, 10, 2),
+            is_am=True,
+            is_pm=True,
+            request_status='Approved',
+            apply_date=datetime.date(2024, 9, 30),
+            request_reason="Doctor's Appointment"
+        )
+        db.session.add(approved_request)
+        db.session.commit()
+
+        # Mock the get_full_team function to return both team members
+        with patch('util.employee.get_full_team') as mock_get_full_team:
+            # Set up mock to return both team members
+            mock_get_full_team.return_value = [self.manager, self.employee]
+            
+            response = self.client.get("/api/team-manager/130002/pending-requests", 
+                                    content_type='application/json')
+            
+            self.assertEqual(response.status_code, 200)
+            expected_response = {
+                "team_size": 2,
+                "pending_requests_count": 0,
+                "team_pending_requests": []
+            }
+            self.assertEqual(response.get_json(), expected_response)
+
+        # Reset the request status back to pending for other tests
+        pending_request = WFHRequests.query.filter_by(request_id='2').first()
+        pending_request.request_status = 'Pending'
+        db.session.commit()
+        
+    def test_get_team_pending_requests_invalid_manager(self):
+        # Mock the get_full_team function to return an empty list
+        with patch('util.employee.get_full_team') as mock_get_full_team:
+            mock_get_full_team.return_value = []
+            
+            response = self.client.get("/api/team-manager/999999/pending-requests", 
+                                    content_type='application/json')
+            
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.get_json(), {
+                "team_size": 0,
+                "pending_requests_count": 0,
+                "team_pending_requests": []
+            })
+
+    def test_get_team_pending_withdraw_requests_invalid_manager(self):
+        with patch('util.employee.get_full_team') as mock_get_full_team:
+            mock_get_full_team.return_value = []
+
+            response = self.client.get("/api/team-manager/999999/pending-requests-withdraw", content_type='application/json')
+
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.get_json(), {
+            "team_size": 0,
+            "pending_requests_count": 0,
+            "team_pending_requests": []
+        })
+            
+    def test_get_team_pending_withdraw_requests_no_pending(self):
+    # First, let's update the existing pending request to be approved
+        pending_request = WFHRequests.query.filter_by(request_id='2').first()
+        pending_request.request_status = 'Withdrawn'
+        db.session.commit()
+
+        # Create a new WFH request with 'Approved' status
+        approved_request = WFHRequests(
+            request_id='3',
+            staff_id=140008,
+            manager_id=140001,
+            specific_date=datetime.date(2024, 10, 2),
+            is_am=True,
+            is_pm=True,
+            request_status='Withdrawn',
+            apply_date=datetime.date(2024, 9, 30),
+            request_reason="Doctor's Appointment"
+        )
+        db.session.add(approved_request)
+        db.session.commit()
+
+        # Mock the get_full_team function to return both team members
+        with patch('util.employee.get_full_team') as mock_get_full_team:
+            # Set up mock to return both team members
+            mock_get_full_team.return_value = [self.manager, self.employee]
+            
+            response = self.client.get("/api/team-manager/130002/pending-requests-withdraw", 
+                                    content_type='application/json')
+            
+            self.assertEqual(response.status_code, 200)
+            expected_response = {
+                "team_size": 2,
+                "pending_requests_count": 0,
+                "team_pending_requests": []
+            }
+            self.assertEqual(response.get_json(), expected_response)
+
+        # Reset the request status back to pending for other tests
+        pending_request = WFHRequests.query.filter_by(request_id='2').first()
+        pending_request.request_status = 'Pending'
+        db.session.commit()
+
+    def test_get_team_pending_withdraw_requests(self):
+        pending_withdraw_request = WFHRequests(
+            request_id='3',
+            staff_id=140008,
+            manager_id=140001,
+            specific_date=datetime.date(2024, 10, 2),
+            is_am=True,
+            is_pm=True,
+            request_status='Pending_Withdraw',
+            apply_date=datetime.date(2024, 9, 30),
+            request_reason="NIL"
+        )
+        db.session.add(pending_withdraw_request)
+        db.session.commit()
+
+        # Mock the get_full_team function
+        with patch('util.employee.get_full_team') as mock_get_full_team:
+            mock_get_full_team.return_value = [self.employee]
+            
+            response = self.client.get("/api/team-manager/140001/pending-requests-withdraw", 
+                                    content_type='application/json')
+            
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.get_json(), {
+                "team_size": 1,
+                "pending_requests_count": 1,
+                "team_pending_requests": [
+                    {
+                        "staff_id": 140008,
+                        "pending_requests": [
+                            {
+                                "request_id": '3',
+                                "staff_id": 140008,
+                                "manager_id": 140001,
+                                "specific_date": '2024-10-02',
+                                "is_am": True,
+                                "is_pm": True,
+                                "request_status": 'Pending_Withdraw',
+                                "apply_date": '2024-09-30',
+                                "request_reason": 'NIL'
+                            }
+                        ]
+                    }
+                ]
+            })
+    
 
 if __name__ == '__main__':
     unittest.main()

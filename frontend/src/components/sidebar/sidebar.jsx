@@ -1,11 +1,192 @@
 import React from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { Drawer, List, ListItem, ListItemIcon, ListItemText, Typography } from '@mui/material';
-import { Home, ListAlt, ExitToApp, School, CalendarToday, Assignment } from '@mui/icons-material';
+import { Link, useLocation, useParams } from 'react-router-dom';
+import { 
+  Drawer, 
+  List, 
+  ListItem, 
+  ListItemIcon, 
+  ListItemText, 
+  Typography,
+  Divider 
+} from '@mui/material';
+import { 
+  Home, 
+  ListAlt, 
+  ExitToApp, 
+  School, 
+  CalendarToday, 
+  Assignment,
+  People,
+  Assessment,
+  Approval
+} from '@mui/icons-material';
 import './sidebar.css';
 
-const Sidebar = () => {
+const ROLES = {
+  HR: 1,
+  STAFF: 2,
+  MANAGER: 3
+};
+
+const Sidebar = ({ staffRole }) => {
   const { staffId } = useParams();
+  const location = useLocation();
+
+  // Staff menu items
+  const staffMenuItems = [
+    {
+      heading: 'SCHEDULE',
+      items: [
+        {
+          text: 'Home',
+          icon: <Home className="sidebar-icon" />,
+          to: `/${staffId}/`
+        },
+        {
+          text: 'Schedule',
+          icon: <CalendarToday className="sidebar-icon" />,
+          to: `/${staffId}/2/schedule`
+        }
+      ]
+    },
+    {
+      heading: 'APPLICATION',
+      items: [
+        {
+          text: 'My Requests',
+          icon: <Assignment className="sidebar-icon" />,
+          to: `/${staffId}/2/requests`
+        },
+        {
+          text: 'Apply',
+          icon: <ListAlt className="sidebar-icon" />,
+          to: `/${staffId}/2/wfh-request`
+        }
+      ]
+    },
+    {
+      heading: 'WITHDRAWAL',
+      items: [
+        {
+          text: 'Withdrawal',
+          icon: <School className="sidebar-icon" />,
+          to: `/${staffId}/2/withdrawal`
+        }
+      ]
+    }
+  ];
+
+  // HR-specific menu items
+  const hrMenuItems = [
+    {
+      heading: 'HR MANAGEMENT',
+      items: [
+        {
+          text: 'Department View',
+          icon: <People className="sidebar-icon" />,
+          to: `/${staffId}/1/dept-view`
+        },
+        {
+          text: 'HR Calendar',
+          icon: <Assessment className="sidebar-icon" />,
+          to: `/${staffId}/1/hr-calendar`
+        }
+      ]
+    }
+  ];
+
+  // Manager-specific menu items
+  const managerMenuItems = [
+    {
+      heading: 'SCHEDULE',
+      items: [
+        {
+          text: 'Home',
+          icon: <Home className="sidebar-icon" />,
+          to: `/${staffId}/`
+        },
+        {
+          text: 'Team Schedule',
+          icon: <CalendarToday className="sidebar-icon" />,
+          to: `/${staffId}/3/schedule`
+        }
+      ]
+    },
+    {
+      heading: 'APPROVAL MANAGEMENT',
+      items: [
+        {
+          text: 'Pending Requests',
+          icon: <Approval className="sidebar-icon" />,
+          to: `/${staffId}/3/pending-requests`
+        },
+        {
+          text: 'Withdrawal Requests',
+          icon: <School className="sidebar-icon" />,
+          to: `/${staffId}/3/withdrawal-requests`
+        }
+      ]
+    },
+    {
+      heading: 'APPLICATION',
+      items: [
+        {
+          text: 'My Requests',
+          icon: <Assignment className="sidebar-icon" />,
+          to: `/${staffId}/2/requests`
+        },
+        {
+          text: 'Apply',
+          icon: <ListAlt className="sidebar-icon" />,
+          to: `/${staffId}/2/wfh-request`
+        }
+      ]
+    },
+    {
+      heading: 'WITHDRAWAL',
+      items: [
+        {
+          text: 'Withdrawal',
+          icon: <School className="sidebar-icon" />,
+          to: `/${staffId}/2/withdrawal`
+        }
+      ]
+    }
+  ];
+
+  // Get relevant menu items based on role
+  const getMenuItems = () => {
+    if (staffRole === ROLES.HR) {
+      return [...hrMenuItems, ...staffMenuItems];
+    }
+    if (staffRole === ROLES.MANAGER) {
+      return managerMenuItems;
+    }
+    return staffMenuItems;
+  };
+
+  const renderMenuSection = (section) => (
+    <React.Fragment key={section.heading}>
+      <Typography className="sidebar-heading">
+        {section.heading}
+      </Typography>
+      {section.items.map((item, index) => (
+        <ListItem 
+          button 
+          component={Link} 
+          to={item.to}
+          key={`${section.heading}-${index}`}
+          selected={location.pathname === item.to}
+        >
+          <ListItemIcon>
+            {item.icon}
+          </ListItemIcon>
+          <ListItemText primary={item.text} />
+        </ListItem>
+      ))}
+      {section.heading !== 'OTHERS' && <Divider className="sidebar-divider" />}
+    </React.Fragment>
+  );
 
   return (
     <Drawer
@@ -14,57 +195,18 @@ const Sidebar = () => {
       anchor="left"
     >
       <div className="sidebar-content">
-        <Typography className="sidebar-heading">
-          SCHEDULE
-        </Typography>
         <List>
-          <ListItem button component={Link} to={`/${staffId}/`}>
-            <ListItemIcon>
-              <Home className="sidebar-icon" />
-            </ListItemIcon>
-            <ListItemText primary="Home" />
-          </ListItem>
-          <ListItem button component={Link} to={`/${staffId}/Staff/Schedule`}>
-            <ListItemIcon>
-              <CalendarToday className="sidebar-icon" />
-            </ListItemIcon>
-            <ListItemText primary="Schedule" />
-          </ListItem>
-
-          <Typography className="sidebar-heading">
-            APPLICATION
-          </Typography>
-
-          <ListItem button component={Link} to={`/${staffId}/Staff/Application/Requests`}>
-            <ListItemIcon>
-              <Assignment className="sidebar-icon" />
-            </ListItemIcon>
-            <ListItemText primary="Requests" />
-          </ListItem>
-
-          <ListItem button component={Link} to={`/${staffId}/Staff/WFHRequestForm`}>
-            <ListItemIcon>
-              <ListAlt className="sidebar-icon" />
-            </ListItemIcon>
-            <ListItemText primary="Apply" />
-          </ListItem>
-
-          <Typography className="sidebar-heading">
-            WITHDRAWAL
-          </Typography>
-
-          <ListItem button component={Link} to={`/${staffId}/Staff/Withdrawal`}>
-            <ListItemIcon>
-              <School className="sidebar-icon" />
-            </ListItemIcon>
-            <ListItemText primary="Withdrawal" />
-          </ListItem>
-
+          {getMenuItems().map(section => renderMenuSection(section))}
+          
           <Typography className="sidebar-heading">
             OTHERS
           </Typography>
-
-          <ListItem button component={Link} to="/logout">
+          <ListItem 
+            button 
+            component={Link} 
+            to="/logout"
+            selected={location.pathname === '/logout'}
+          >
             <ListItemIcon>
               <ExitToApp className="sidebar-icon" />
             </ListItemIcon>

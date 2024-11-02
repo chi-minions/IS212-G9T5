@@ -93,3 +93,13 @@
   .highlight-text {
     flex-shrink: 0;  /* Prevent this text from shrinking */
   }
+
+  .sidebar-content .MuiListItemText-root {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .sidebar-content .MuiListItem-root {
+    padding: 8px 16px;
+  }

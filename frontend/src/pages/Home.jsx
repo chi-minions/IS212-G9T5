@@ -21,19 +21,15 @@ function Home() {
         <tbody>
           <tr>
             <td>Staff</td>
-            <td><a href="https://is-212-g9-t5.vercel.app/140002">140002</a></td>
+            <td><a href="/140002">140002</a></td>
           </tr>
           <tr>
             <td>Manager</td>
-            <td><a href="https://is-212-g9-t5.vercel.app/140894">140894</a></td>
+            <td><a href="/140894">140894</a></td>
           </tr>
           <tr>
-            <td>HR</td>
-            <td><a href="https://is-212-g9-t5.vercel.app/" aria-disabled></a>No IDs yet</td>
-          </tr>
-          <tr>
-            <td>Senior Manager/Director</td>
-            <td><a href="https://is-212-g9-t5.vercel.app/140001">140001</a></td>
+            <td>Senior Manager/Director/HR</td>
+            <td><a href="/140001">140001</a></td>
           </tr>
         </tbody>
       </table>

@@ -23,7 +23,7 @@ def auto_reject():
 
     pending_requests = WFHRequests.query.filter(
         WFHRequests.request_status == "Pending",
-        WFHRequests.apply_date <= two_months_ago
+        WFHRequests.apply_date < two_months_ago
     ).all()
 
     for request in pending_requests:

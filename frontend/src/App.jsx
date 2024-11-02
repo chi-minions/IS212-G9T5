@@ -12,8 +12,11 @@ import PendingRequests from './components/approval/PendingRequests';
 import WFHRequestForm from './components/apply/WFHRequestForm';
 import WithdrawalFormView from './pages/WithdrawalFormView';
 import StaffRequestsView from './pages/StaffRequestsView';
+import WithdrawalRequests from './components/withdrawRequests/withdrawalRequests';
+import WithdrawalApprovalScreen from './components/withdrawRequests/withdrawalApprovalScreen';
 import './App.css';
 
+// Define roles as constants for better maintainability
 const ROLES = {
   HR: 1,
   STAFF: 2,
@@ -74,59 +77,76 @@ function AppContent() {
             <div>Error: {error}. Please try refreshing the page or contact support.</div>
           ) : (
             <Routes>
-            <Route index element={<Home staffId={staffId} />} />
-            <Route path="hr">
-              <Route path="dept-view" element={
-                <ProtectedRoute allowedRoles={[ROLES.HR]} staffRole={staffRole}>
-                  <DeptView />
-                </ProtectedRoute>
-              } />
-              <Route path="hr-calendar" element={
-                <ProtectedRoute allowedRoles={[ROLES.HR]} staffRole={staffRole}>
-                  <HrCalendar />
-                </ProtectedRoute>
-              } />
-            </Route>
-            <Route path="Staff">
-              <Route path="Schedule" element={
-                <ProtectedRoute allowedRoles={[ROLES.STAFF, ROLES.MANAGER, ROLES.HR]} staffRole={staffRole}>
-                  <StaffViewSchedule staffId={staffId} />
-                </ProtectedRoute>
-              } />
-              <Route path="WFHRequestForm" element={
-                <ProtectedRoute allowedRoles={[ROLES.STAFF, ROLES.MANAGER]} staffRole={staffRole}>
-                  <WFHRequestForm staffId={staffId} />
-                </ProtectedRoute>
-              } />
-              <Route path="Application/Requests" element={
-                <ProtectedRoute allowedRoles={[ROLES.STAFF, ROLES.MANAGER]} staffRole={staffRole}>
-                  <StaffRequestsView staffId={staffId} />
-                </ProtectedRoute>
-              } />
-              <Route path="Withdrawal" element={
-                <ProtectedRoute allowedRoles={[ROLES.STAFF, ROLES.MANAGER]} staffRole={staffRole}>
-                  <WithdrawalFormView staffId={staffId} />
-                </ProtectedRoute>
-              } />
-            </Route>
-            <Route path="Manager">
-              <Route path="Schedule" element={
-                <ProtectedRoute allowedRoles={[ROLES.MANAGER]} staffRole={staffRole}>
-                  <ManageerViewTeamSchedule staffId={staffId} />
-                </ProtectedRoute>
-              } />
-              <Route path="ApprovalScreen/:approval_staff_id" element={
-                <ProtectedRoute allowedRoles={[ROLES.MANAGER]} staffRole={staffRole}>
-                  <ApprovalScreen />
-                </ProtectedRoute>
-              } />
-              <Route path="PendingRequests" element={
-                <ProtectedRoute allowedRoles={[ROLES.MANAGER]} staffRole={staffRole}>
-                  <PendingRequests staffId={staffId} />
-                </ProtectedRoute>
-              } />
-            </Route>
-            <Route path="*" element={<Navigate to={`/${staffId}`} replace />} />
+              <Route index element={<Home staffId={staffId} />} />
+              
+              {/* HR Routes (Role 1) */}
+              <Route path="1">
+                <Route path="dept-view" element={
+                  <ProtectedRoute allowedRoles={[ROLES.HR]} staffRole={staffRole}>
+                    <DeptView />
+                  </ProtectedRoute>
+                } />
+                <Route path="hr-calendar" element={
+                  <ProtectedRoute allowedRoles={[ROLES.HR]} staffRole={staffRole}>
+                    <HrCalendar />
+                  </ProtectedRoute>
+                } />
+              </Route>
+
+              {/* Staff Routes (Role 2) - Common functionalities for all roles */}
+              <Route path="2">
+                <Route path="schedule" element={
+                  <ProtectedRoute allowedRoles={[ROLES.STAFF, ROLES.MANAGER, ROLES.HR]} staffRole={staffRole}>
+                    <StaffViewSchedule staffId={staffId} />
+                  </ProtectedRoute>
+                } />
+                <Route path="wfh-request" element={
+                  <ProtectedRoute allowedRoles={[ROLES.STAFF, ROLES.MANAGER]} staffRole={staffRole}>
+                    <WFHRequestForm staffId={staffId} />
+                  </ProtectedRoute>
+                } />
+                <Route path="requests" element={
+                  <ProtectedRoute allowedRoles={[ROLES.STAFF, ROLES.MANAGER]} staffRole={staffRole}>
+                    <StaffRequestsView staffId={staffId} />
+                  </ProtectedRoute>
+                } />
+                <Route path="withdrawal" element={
+                  <ProtectedRoute allowedRoles={[ROLES.STAFF, ROLES.MANAGER]} staffRole={staffRole}>
+                    <WithdrawalFormView staffId={staffId} />
+                  </ProtectedRoute>
+                } />
+              </Route>
+
+              {/* Manager Routes (Role 3) */}
+              <Route path="3">
+                <Route path="schedule" element={
+                  <ProtectedRoute allowedRoles={[ROLES.MANAGER]} staffRole={staffRole}>
+                    <ManageerViewTeamSchedule staffId={staffId} />
+                  </ProtectedRoute>
+                } />
+                <Route path="approval/:approval_req_id" element={
+                  <ProtectedRoute allowedRoles={[ROLES.MANAGER]} staffRole={staffRole}>
+                    <ApprovalScreen />
+                  </ProtectedRoute>
+                } />
+                <Route path="pending-requests" element={
+                  <ProtectedRoute allowedRoles={[ROLES.MANAGER]} staffRole={staffRole}>
+                    <PendingRequests staffId={staffId} />
+                  </ProtectedRoute>
+                } />
+                <Route path="withdrawal-requests" element={
+                  <ProtectedRoute allowedRoles={[ROLES.MANAGER]} staffRole={staffRole}>
+                    <WithdrawalRequests/>
+                  </ProtectedRoute>
+                } />
+                <Route path="withdrawal-approval/:approval_staff_id/:withdrawal_id" element={
+                  <ProtectedRoute allowedRoles={[ROLES.MANAGER]} staffRole={staffRole}>
+                    <WithdrawalApprovalScreen />
+                  </ProtectedRoute>
+                } />
+              </Route>
+
+              <Route path="*" element={<Navigate to={`/${staffId}`} replace />} />
             </Routes>
           )}
         </div>

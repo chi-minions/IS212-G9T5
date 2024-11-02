@@ -124,3 +124,86 @@ def get_team_schedule(staff_id):
 
     return jsonify(team_schedule), 200
 
+@dates.route("/api/team-manager/<int:manager_id>/pending-requests", methods=["GET"])
+def get_team_pending_requests(manager_id):
+    # Get the full team under the given manager
+    team = get_full_team(manager_id)
+
+    # Prepare the pending requests for each team member
+    team_pending_requests = []
+    for team_member in team:
+        # Get all pending WFH requests without a date filter
+        pending_requests = WFHRequests.query.filter(
+            WFHRequests.staff_id == team_member.staff_id,
+            WFHRequests.request_status == "Pending"
+        ).order_by(WFHRequests.specific_date.asc()).all()
+
+        # Create the request details for the current team member
+        request_details = [
+            {
+                "request_id": request.request_id,
+                "staff_id": request.staff_id,
+                "manager_id": request.manager_id,
+                "specific_date": request.specific_date.strftime("%Y-%m-%d"),
+                "is_am": request.is_am,
+                "is_pm": request.is_pm,
+                "request_status": request.request_status,
+                "apply_date": request.apply_date.strftime("%Y-%m-%d"),
+                "request_reason": request.request_reason,
+            } for request in pending_requests
+        ]
+
+        if request_details:
+            # Add the team member's pending requests only if they have any
+            team_pending_requests.append({
+                "staff_id": team_member.staff_id,
+                "pending_requests": request_details
+            })
+
+    return jsonify({
+        "team_size": len(team),
+        "pending_requests_count": sum(len(member["pending_requests"]) for member in team_pending_requests),
+        "team_pending_requests": team_pending_requests
+    }), 200
+
+@dates.route("/api/team-manager/<int:manager_id>/pending-requests-withdraw", methods=["GET"])
+def get_team_pending_withdraw_requests(manager_id):
+    # Get the full team under the given manager
+    team = get_full_team(manager_id)
+
+    # Prepare the pending requests for each team member
+    team_pending_requests = []
+    for team_member in team:
+        # Get all pending WFH requests without a date filter
+        pending_requests = WFHRequests.query.filter(
+            WFHRequests.staff_id == team_member.staff_id,
+            WFHRequests.request_status == "Pending_Withdraw"
+        ).order_by(WFHRequests.specific_date.asc()).all()
+
+        # Create the request details for the current team member
+        request_details = [
+            {
+                "request_id": request.request_id,
+                "staff_id": request.staff_id,
+                "manager_id": request.manager_id,
+                "specific_date": request.specific_date.strftime("%Y-%m-%d"),
+                "is_am": request.is_am,
+                "is_pm": request.is_pm,
+                "request_status": request.request_status,
+                "apply_date": request.apply_date.strftime("%Y-%m-%d"),
+                "request_reason": request.request_reason,
+            } for request in pending_requests
+        ]
+
+        if request_details:
+            # Add the team member's pending requests only if they have any
+            team_pending_requests.append({
+                "staff_id": team_member.staff_id,
+                "pending_requests": request_details
+            })
+
+    return jsonify({
+        "team_size": len(team),
+        "pending_requests_count": sum(len(member["pending_requests"]) for member in team_pending_requests),
+        "team_pending_requests": team_pending_requests
+    }), 200

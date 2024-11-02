@@ -22,17 +22,23 @@ load_dotenv()
 def create_app():
     app = Flask(__name__)
 
-    if __name__ == '__main__':
-        DATABASE_URL = os.getenv("DATABASE_URL")
-        app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    if os.getenv("TESTING") == "True":
+        # Use SQLite for testing
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
+        CELERY_BROKER_URL = "redis://localhost:6379"
+        CELERY_RESULT_BACKEND = "redis://localhost:6379"
+        
     else:
-        app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite://"
+        # Use PostgreSQL for production
+        app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+        CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+        CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
 
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config.from_mapping(
         CELERY=dict(
-            broker_url="redis://localhost:6379",
-            result_backend="redis://localhost:6379",
+            broker_url=CELERY_BROKER_URL,
+            result_backend=CELERY_RESULT_BACKEND,
             task_ignore_result=True,
             beat_schedule={
                 # FOR TESTING
@@ -68,5 +74,6 @@ def create_app():
 
 app = create_app()
 
+# Run the app
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)

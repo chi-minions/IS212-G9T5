@@ -1,260 +1,196 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { 
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableFooter,
-  Paper, Button, IconButton, Box, Card, Typography, Checkbox, MenuItem, Select
+  Table, TableBody, TableCell, TableContainer, TableHead, TableFooter, TableRow, 
+  Paper, Box, Card, Typography, IconButton, Button, Menu, MenuItem, Checkbox, FormControlLabel,
+  Skeleton
 } from '@mui/material';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import dayjs from 'dayjs';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import '../../components/WeeklyCalendar/WeeklyCalendar.css'; // Ensure the correct path to your CSS file
-
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
-
-dayjs.extend(isSameOrAfter);
-dayjs.extend(isSameOrBefore);
-
-
-// Mock data
-const mockEmployeeData = [
-  {
-    staff_id: 101,
-    staff_fname: "Alice",
-    staff_lname: "Smith",
-    dept: "Sales",
-    position: "Sales Manager",
-    country: "USA",
-    email: "alice.smith@company.com",
-    reporting_manager: 201,
-    role: 1
-  },
-  {
-    staff_id: 102,
-    staff_fname: "Bob",
-    staff_lname: "Johnson",
-    dept: "Engineering",
-    position: "Software Engineer",
-    country: "USA",
-    email: "bob.johnson@company.com",
-    reporting_manager: 202,
-    role: 1
-  }
-];
-
-const mockWFHScheduleData = [
-  {
-    request_id: 1,
-    staff_id: 101,
-    specific_date: "2024-10-14",
-    is_am: true,
-    is_pm: false,
-    request_status: "approved"
-  },
-  {
-    request_id: 2,
-    staff_id: 102,
-    specific_date: "2024-10-14",
-    is_am: false,
-    is_pm: true,
-    request_status: "approved"
-  },
-  {
-    request_id: 3,
-    staff_id: 101,
-    specific_date: "2024-10-15",
-    is_am: true,
-    is_pm: true,
-    request_status: "approved"
-  }
-];
-
-
+import dayjs from 'dayjs';
+import '../../components/WeeklyCalendar/WeeklyCalendar.css';
 
 const HrCalendar = () => {
   const [currentDate, setCurrentDate] = useState(dayjs());
-  const [scheduleData, setScheduleData] = useState([]);
-  const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [selectedEmployees, setSelectedEmployees] = useState([]);
-  const [departmentFilterOpen, setDepartmentFilterOpen] = useState(false);
-  const [availableEmployees, setAvailableEmployees] = useState([]);
+  const [departmentManagers, setDepartmentManagers] = useState({});
+  const [scheduleData, setScheduleData] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { staffId } = useParams();
+
+  const [selectedDepartments, setSelectedDepartments] = useState([]);
+  const [filterAnchorEl, setFilterAnchorEl] = useState(null);
 
   const shifts = [
     { name: 'AM', time: '9:00 - 13:00' },
     { name: 'PM', time: '14:00 - 18:00' }
   ];
 
+  const weekDates = useMemo(() => 
+    Array.from({ length: 7 }, (_, i) => 
+      currentDate.startOf('week').add(i, 'day').format('YYYY-MM-DD')
+    ), [currentDate]);
+
+  // Fetch managers once when component mounts
   useEffect(() => {
-    const fetchScheduleData = () => {
-        const weekStart = currentDate.startOf('week');
-        const weekEnd = currentDate.endOf('week');
-
-        // Loop through the week and get the department schedules for each day
-        const weekDates = [];
-        for (let date = weekStart; date.isSameOrBefore(weekEnd); date = date.add(1, 'day')) {
-            const departmentSchedule = getDepartmentSchedule(date);
-            weekDates.push({ date: date.format('YYYY-MM-DD'), departmentSchedule });
-        }
-
-        setScheduleData(weekDates);  // Store schedule for the entire week
+    const fetchManagers = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/managers');
+        const data = await response.json();
+        setDepartmentManagers(data);
+        setError(null);
+      } catch (error) {
+        console.error('Error fetching managers:', error);
+        setError(error.message);
+      }
     };
 
-    fetchScheduleData();
-}, [currentDate]);
+    fetchManagers();
+  }, []);
 
-const getDepartmentSchedule = (date) => {
-  const departments = {};
+  // Fetch schedules when week changes
+  useEffect(() => {
+    const fetchSchedules = async () => {
+      setLoading(true);
+      setScheduleData({}); // Clear existing schedule data
+      
+      try {
+        const startDate = currentDate.startOf('week').format('YYYY-MM-DD');
+        const endDate = currentDate.endOf('week').format('YYYY-MM-DD');
+        
+        // Fetch schedules for all managers in parallel
+        const schedulePromises = Object.values(departmentManagers).flat().map(manager =>
+          fetch(`/api/manager/${manager.staff_id}/team_schedule?start_date=${startDate}&end_date=${endDate}`)
+            .then(res => res.json())
+            .then(data => ({ [manager.staff_id]: data }))
+        );
 
-  // Filter WFH schedule data by the selected department and specific date
-  const filteredData = mockWFHScheduleData
-    .filter(item => item.specific_date === date.format('YYYY-MM-DD'))
-    .filter(item => {
-      const employee = mockEmployeeData.find(emp => emp.staff_id === item.staff_id);
-      return !selectedDepartment || (employee && employee.dept === selectedDepartment);
+        const scheduleResults = await Promise.all(schedulePromises);
+        const combinedSchedules = scheduleResults.reduce((acc, curr) => ({...acc, ...curr}), {});
+        
+        setScheduleData(combinedSchedules);
+        setError(null);
+      } catch (error) {
+        console.error('Error fetching schedules:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (Object.keys(departmentManagers).length > 0) {
+      fetchSchedules();
+    }
+  }, [currentDate, departmentManagers]);
+
+  const handleDepartmentClick = (department, date) => {
+    console.log('Date being passed:', date);
+    const dateStr = typeof date === 'string' ? date : dayjs(date).format('YYYY-MM-DD');
+    console.log('Formatted date:', dateStr);
+    navigate(`/${staffId}/1/dept-view`, { 
+      state: { 
+        department, 
+        date: dateStr
+      } 
     });
+  };
 
-  // Add WFH data into departments object
-  filteredData.forEach((item) => {
-      const employee = mockEmployeeData.find(emp => emp.staff_id === item.staff_id);
-      if (employee && !departments[employee.dept]) {
-        departments[employee.dept] = { office: 0, home: 0, total: 0 };
-      }
+  const AttendanceCell = React.memo(({ date, department }) => {
+    const isDataReady = useMemo(() => {
+      const managers = departmentManagers[department] || [];
+      return managers.every(manager => 
+        scheduleData[manager.staff_id]?.team !== undefined
+      );
+    }, [date, department, departmentManagers, scheduleData]);
 
-      if (employee) {
-        if (item.is_am || item.is_pm) {
-          departments[employee.dept].home += 1;
-        } else {
-          departments[employee.dept].office += 1;
-        }
-        departments[employee.dept].total += 1;
-      }
+    const calculateAttendance = useMemo(() => {
+      if (!isDataReady) return null;
+
+      const managers = departmentManagers[department] || [];
+      let inOfficeCount = 0;
+      let totalCount = 0;
+
+      managers.forEach(manager => {
+        const teamData = scheduleData[manager.staff_id]?.team || [];
+        totalCount += manager.teamSize;
+        
+        teamData.forEach(member => {
+          const hasWfhOnDate = member.ScheduleDetails.some(schedule => 
+            schedule.specific_date === date
+          );
+          if (!hasWfhOnDate) {
+            inOfficeCount++;
+          }
+        });
+      });
+
+      return { inOffice: inOfficeCount, total: totalCount };
+    }, [date, department, departmentManagers, scheduleData, isDataReady]);
+
+    return (
+      <Card className="schedule-card">
+        <Box p={1}>
+          {!isDataReady ? (
+            <Skeleton width="100%" height={24} animation="wave" />
+          ) : (
+            <Typography variant="body2">
+              {department}: {calculateAttendance.inOffice} / {calculateAttendance.total}
+            </Typography>
+          )}
+        </Box>
+      </Card>
+    );
   });
 
-  // Add default office days for employees without WFH records
-  mockEmployeeData
-    .filter(emp => !filteredData.some(item => item.staff_id === emp.staff_id))
-    .filter(emp => !selectedDepartment || emp.dept === selectedDepartment)
-    .forEach(emp => {
-      if (!departments[emp.dept]) {
-        departments[emp.dept] = { office: 0, home: 0, total: 0 };
-      }
-      departments[emp.dept].office += 1;  // Assume office
-      departments[emp.dept].total += 1;
-    });
-
-  return departments;
-};
-
-
-
-  const getWeekDates = (date) => {
-    const startOfWeek = date.startOf('week');
-    return Array.from({ length: 7 }, (_, i) => startOfWeek.add(i, 'day'));
-  };
-
-  const weekDates = getWeekDates(currentDate);
-
-  const handlePrevWeek = () => {
-    setCurrentDate(currentDate.subtract(1, 'week'));
-  };
-
-  const handleNextWeek = () => {
-    setCurrentDate(currentDate.add(1, 'week'));
-  };
-
-  const handleDateChange = (newDate) => {
-    setCurrentDate(dayjs(newDate));
-  };
-
-  const handleFilterOpen = () => {
-    setDepartmentFilterOpen(true);
+  const handleFilterClick = (event) => {
+    setFilterAnchorEl(event.currentTarget);
   };
 
   const handleFilterClose = () => {
-    setDepartmentFilterOpen(false);
+    setFilterAnchorEl(null);
   };
 
-  const handleDepartmentChange = (event) => {
-    const departmentName = event.target.value;
-    setSelectedDepartment(departmentName);
-  
-    // Update available employees based on selected department using mockEmployeeData
-    const employees = mockEmployeeData.filter(emp => emp.dept === departmentName);
-    setAvailableEmployees(employees);
-  };  
-
-  const handleEmployeeSelection = (event) => {
-    const { value } = event.target;
-    setSelectedEmployees(typeof value === 'string' ? value.split(',') : value);
+  const handleDepartmentToggle = (department) => {
+    setSelectedDepartments(prev => {
+      if (prev.includes(department)) {
+        return prev.filter(d => d !== department);
+      } else {
+        return [...prev, department];
+      }
+    });
   };
 
-  const handleDepartmentClick = (department, date) => {
-    navigate('/hr/dept-view', { state: { department, date } });
-  };
+  if (loading && Object.keys(departmentManagers).length === 0) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+        <Typography>Loading calendar data...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+        <Typography color="error">Error: {error}</Typography>
+      </Box>
+    );
+  }
 
   return (
     <div className="weekly-schedule-container">
-      {/* Filter Button */}
-      <Button variant="outlined" onClick={handleFilterOpen} startIcon={<FilterListIcon />}>
-        Filter
-      </Button>
-
-      {departmentFilterOpen && (
-        <div className="filter-dropdown">
-          <Box p={2} display="flex" flexDirection="column" gap={2}>
-            {/* Department Filter */}
-            <Select
-              value={selectedDepartment}
-              onChange={handleDepartmentChange}
-              displayEmpty
-              fullWidth
-            >
-              <MenuItem value=""><em>Select Department</em></MenuItem>
-              {[...new Set(mockEmployeeData.map(emp => emp.dept))].map(dept => (
-                <MenuItem key={dept} value={dept}>
-                  {dept}
-                </MenuItem>
-              ))}
-            </Select>
-
-
-            {/* Employee Filter (Based on selected department) */}
-            <Select
-              multiple
-              value={selectedEmployees}
-              onChange={handleEmployeeSelection}
-              displayEmpty
-              fullWidth
-            >
-              <MenuItem disabled value="">
-                <em>Select Employees</em>
-              </MenuItem>
-              {availableEmployees.map((emp) => (
-                <MenuItem key={emp.staff_id} value={emp.staff_id}>
-                  {`Employee ${emp.staff_id}`} {/* Use appropriate employee naming */}
-                </MenuItem>
-              ))}
-            </Select>
-
-            <Button variant="outlined" onClick={handleFilterClose}>
-              Apply Filters
-            </Button>
-          </Box>
-        </div>
-      )}
-
       <TableContainer component={Paper} className="centered-table-container">
         <Table className="styled-table">
           <TableHead>
             <TableRow>
               <TableCell>Shift</TableCell>
               {weekDates.map((date) => (
-                <TableCell key={date.format('YYYY-MM-DD')}>
-                  {date.format('ddd, MMM D')}
+                <TableCell key={dayjs(date).format('YYYY-MM-DD')}>
+                  {dayjs(date).format('ddd, MMM D')}
                 </TableCell>
               ))}
             </TableRow>
@@ -263,40 +199,29 @@ const getDepartmentSchedule = (date) => {
             {shifts.map(shift => (
               <TableRow key={shift.name}>
                 <TableCell className="shift-cell">
-                  {shift.name}
-                  <br />
-                  ({shift.time})
+                  {shift.name}<br />({shift.time})
                 </TableCell>
-                {weekDates.map((date) => {
-                  const departmentSchedule = getDepartmentSchedule(date);
-
-                  return (
-                    <TableCell key={`${date.format('YYYY-MM-DD')}-${shift.name}`}>
-                      <Card className="schedule-card">
-                        <Box p={1}>
-                          {Object.entries(departmentSchedule).length > 0 ? (
-                            Object.entries(departmentSchedule).map(([department, counts]) => (
-                              <Box key={department} p={1}>
-                                <Button
-                                  variant="outlined"
-                                  fullWidth
-                                  onClick={() => handleDepartmentClick(department, date.format('YYYY-MM-DD'))}
-                                  style={{ textAlign: 'left', textTransform: 'none', display: 'block' }}
-                                >
-                                  <Typography variant="body1" gutterBottom><strong>{department}</strong></Typography>
-                                  <Typography variant="body2">Office: {counts.office}</Typography>
-                                  <Typography variant="body2">Home: {counts.home}</Typography>
-                                </Button>
-                              </Box>
-                            ))
-                          ) : (
-                            <Box>No departments scheduled</Box>
-                          )}
-                        </Box>
-                      </Card>
-                    </TableCell>
-                  );
-                })}
+                {weekDates.map((date) => (
+                  <TableCell key={`${dayjs(date).format('YYYY-MM-DD')}-${shift.name}`}>
+                    {departmentManagers && 
+                      Object.keys(departmentManagers)
+                        .filter(department => selectedDepartments.length === 0 || selectedDepartments.includes(department))
+                        .map(department => (
+                          <Button
+                            key={`${dayjs(date).format('YYYY-MM-DD')}-${department}`}
+                            variant="outlined"
+                            fullWidth
+                            onClick={() => handleDepartmentClick(department, date)} // date should be a string here
+                            style={{ textAlign: 'left', textTransform: 'none', display: 'block', marginBottom: '8px' }}
+                          >
+                            <AttendanceCell
+                              date={date} // This should already be a string from weekDates
+                              department={department}
+                            />
+                          </Button>
+                    ))}
+                  </TableCell>
+                ))}
               </TableRow>
             ))}
           </TableBody>
@@ -304,22 +229,61 @@ const getDepartmentSchedule = (date) => {
             <TableRow>
               <TableCell colSpan={8}>
                 <div className="footer-content">
-                  <Button variant="outlined" onClick={() => setCurrentDate(dayjs())}>
+                  <IconButton 
+                    onClick={handleFilterClick}
+                    size="small"
+                    sx={{ mr: 1 }}
+                  >
+                    <FilterListIcon />
+                  </IconButton>
+                  <Menu
+                    anchorEl={filterAnchorEl}
+                    open={Boolean(filterAnchorEl)}
+                    onClose={handleFilterClose}
+                  >
+                    <MenuItem>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={selectedDepartments.length === 0}
+                            onChange={() => setSelectedDepartments([])}
+                          />
+                        }
+                        label="Show All"
+                      />
+                    </MenuItem>
+                    {departmentManagers && Object.keys(departmentManagers).map(department => (
+                      <MenuItem key={department}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={selectedDepartments.includes(department)}
+                              onChange={() => handleDepartmentToggle(department)}
+                            />
+                          }
+                          label={department.charAt(0).toUpperCase() + department.slice(1)}
+                        />
+                      </MenuItem>
+                    ))}
+                  </Menu>
+                  <Button 
+                    variant="outlined" 
+                    onClick={() => setCurrentDate(dayjs())}
+                    sx={{ mx: 1 }}
+                  >
                     Today
                   </Button>
-
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
                       label={currentDate.format('MMMM YYYY')}
                       value={currentDate}
-                      onChange={handleDateChange}
+                      onChange={(newDate) => setCurrentDate(dayjs(newDate))}
                     />
                   </LocalizationProvider>
-
-                  <IconButton onClick={handlePrevWeek}>
+                  <IconButton onClick={() => setCurrentDate(prev => prev.subtract(1, 'week'))} sx={{ ml: 1 }}>
                     <ArrowBackIcon />
                   </IconButton>
-                  <IconButton onClick={handleNextWeek}>
+                  <IconButton onClick={() => setCurrentDate(prev => prev.add(1, 'week'))}>
                     <ArrowForwardIcon />
                   </IconButton>
                 </div>
@@ -333,6 +297,9 @@ const getDepartmentSchedule = (date) => {
 };
 
 export default HrCalendar;
+
+
+
 
 
 

@@ -174,6 +174,45 @@ class TestManagerTeamSchedule(TestCase):
             "ScheduleDetails": []
         }, response_data["team"])
 
+    def test_get_all_managers_success(self):
+        """Test successful retrieval of managers grouped by department"""
+        response = self.client.get('/api/managers')
+        self.assertEqual(response.status_code, 200)
+        
+        data = response.json
+        
+        # Check that sales department exists (since we have 2 sales managers)
+        self.assertIn('sales', data)
+        
+        # Check correct number of managers in Sales department
+        self.assertEqual(len(data['sales']), 2)  # Two sales managers: Jaclyn and Rahim
+        
+        # Check the managers have correct staff IDs
+        sales_managers = data['sales']
+        manager_ids = {manager['staff_id'] for manager in sales_managers}
+        self.assertIn(140008, manager_ids)  # Jaclyn's ID
+        self.assertIn(140894, manager_ids)  # Rahim's ID
+
+    def test_get_all_managers_empty(self):
+        """Test when there are no managers in the system"""
+        # Clear the database
+        db.session.query(Employee).delete()
+        db.session.commit()
+        
+        response = self.client.get('/api/managers')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, {})
+
+    def test_get_all_managers_error(self):
+        """Test error handling when database query fails"""
+        # Force an error by dropping the table
+        db.session.remove()
+        db.drop_all()
+        
+        response = self.client.get('/api/managers')
+        self.assertEqual(response.status_code, 500)
+        self.assertIn('error', response.json)
+
 
 if __name__ == '__main__':
     unittest.main()
