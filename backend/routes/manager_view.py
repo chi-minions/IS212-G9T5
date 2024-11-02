@@ -57,6 +57,7 @@ def get_staff_schedule_details(staff_id, start_date, end_date):
         WFHRequests.specific_date >= start_date,
         WFHRequests.specific_date <= end_date
     ).all()
+    
 
     # Convert the approved requests to JSON format with selected fields
     return [{

@@ -35,7 +35,7 @@ def cancel_pending_request(staff_id, request_id, specific_date):
 
     # Update the request status to 'Cancelled' and set the reason
     wfh_request.request_status = 'Cancelled'
-    cancellation_reason = "Staff initiated cancellation"  # Default reason
+    cancellation_reason = "Staff cancelled pending request" 
 
     
     # Log the cancellation in WFHRequestLogs
