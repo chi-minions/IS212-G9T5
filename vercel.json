@@ -1,11 +1,22 @@
 {
-    "buildCommand": "cd frontend && npm install && npm run build",
-    "outputDirectory": "frontend/dist",
-    "framework": "vite",
-    "rewrites": [
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "framework": "vite",
+  "headers": [
       {
-        "source": "/(.*)",
-        "destination": "/index.html"
+          "source": "/(.*)",
+          "headers": [
+              {
+                  "key": "Content-Security-Policy",
+                  "value": "upgrade-insecure-requests"
+              }
+          ]
       }
-    ]
-  }
+  ],
+  "rewrites": [
+      {
+          "source": "/(.*)",
+          "destination": "/index.html"
+      }
+  ]
+}
