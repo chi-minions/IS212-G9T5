@@ -1,5 +1,5 @@
 const config = {
-  ENDPOINT_BE_URL: import.meta.env.VITE_ENDPOINT_BE_URL || 'http://3.107.212.99:5001' || 'http://localhost:5001',
+  ENDPOINT_BE_URL: import.meta.env.VITE_ENDPOINT_BE_URL || 'http://localhost:5001',
 };
 
 if (import.meta.env.DEV) {
