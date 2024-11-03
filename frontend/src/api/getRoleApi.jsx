@@ -1,7 +1,7 @@
 import config from '../config/config';
 
 const BASE_URL = config.ENDPOINT_BE_URL;
-console.log(BASE_URL);
+console.log("getRoleApi", BASE_URL);
 
 export const getRole = async (staffId) => {
     try {
