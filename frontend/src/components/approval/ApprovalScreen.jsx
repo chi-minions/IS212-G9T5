@@ -5,14 +5,14 @@ import config from '../../config/config';
 const BASE_URL = config.ENDPOINT_BE_URL;
 
 const ApprovalScreen = () => {
-  
   const { staffId, approval_req_id } = useParams();
   const [request, setRequest] = useState(null);
   const [isRecurring, setIsRecurring] = useState(false);
-  const [allDates, setAllDates] = useState([]); // Store all dates for recurring requests
+  const [allDates, setAllDates] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [decisionNotes, setDecisionNotes] = useState('');  
+  const [decisionNotes, setDecisionNotes] = useState('');
   const [error, setError] = useState(null);
+  const [validationError, setValidationError] = useState('');
   const navigate = useNavigate();
 
   const fetchRequestDetails = async () => {
@@ -26,7 +26,7 @@ const ApprovalScreen = () => {
       const data = await response.json();
       setRequest(data.data);
       setIsRecurring(data.is_recurring);
-      setAllDates(data.all_dates); // Set all dates for recurring requests
+      setAllDates(data.all_dates);
       setLoading(false);
     } catch (err) {
       setError(err.message);
@@ -50,7 +50,17 @@ const ApprovalScreen = () => {
     }
   };
 
-  const handleDecision = async (decisionStatus) => {
+  const handleSubmit = async (e, decisionStatus) => {
+    e.preventDefault();
+    setValidationError('');
+    setError(null); // Clear any previous API errors
+
+    // Validate decision notes
+    if (!decisionNotes.trim()) {
+      setValidationError('Please provide a reason for your decision');
+      return; // Add this return to prevent the API call
+    }
+
     try {
       const payload = {
         request_id: approval_req_id,
@@ -77,7 +87,6 @@ const ApprovalScreen = () => {
 
       alert(`Decision successfully made: ${decisionStatus}`);
       setError(null);
-
       navigate(`/${staffId}/3/pending-requests`);
     } catch (error) {
       console.error('Error submitting the decision:', error);
@@ -96,7 +105,8 @@ const ApprovalScreen = () => {
   return (
     <div style={{ padding: '20px' }}>
       <h2>Approval Screen for Request ID: {approval_req_id}</h2>
-      <div>
+      
+      <div style={{ marginBottom: '20px' }}>
         <p>Staff ID: {request.staff_id}</p>
         {isRecurring ? (
           <div>
@@ -113,35 +123,80 @@ const ApprovalScreen = () => {
           <p>Date: {request.specific_date} - {formatDayType(request.is_am, request.is_pm)}</p>
         )}
       </div>
-      <div>
-        <label>
-          Reason for Approval/Rejection:
-          <textarea
-            value={decisionNotes}
-            onChange={(e) => setDecisionNotes(e.target.value)}
-            placeholder="Add your reason here..."
-            style={{ width: '100%', minHeight: '100px' }}
-          />
-        </label>
-      </div>
-      <div>
-        <button 
-          onClick={() => handleDecision('Approved')} 
-          style={{ backgroundColor: 'green', color: 'white', marginRight: '10px' }}
-        >
-          Approve
-        </button>
-        <button 
-          onClick={() => handleDecision('Rejected')} 
-          style={{ backgroundColor: 'red', color: 'white' }}
-        >
-          Reject
-        </button>
-      </div>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+
+      <form onSubmit={(e) => e.preventDefault()}>
+        <div style={{ marginBottom: '20px' }}>
+          <label>
+            Reason for Approval/Rejection:
+            <textarea
+              value={decisionNotes}
+              onChange={(e) => {
+                setDecisionNotes(e.target.value);
+                setValidationError('');
+              }}
+              placeholder="Add your reason here..."
+              style={{ 
+                width: '100%', 
+                minHeight: '100px',
+                padding: '8px',
+                marginTop: '8px',
+                borderColor: validationError ? '#dc3545' : '#ced4da',
+                borderRadius: '4px'
+              }}
+            />
+          </label>
+          {validationError && (
+            <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '5px' }}>
+              {validationError}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            type="submit"
+            onClick={(e) => handleSubmit(e, 'Approved')}
+            style={{ 
+              backgroundColor: '#28a745', 
+              color: 'white',
+              padding: '10px 20px',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Approve
+          </button>
+          <button 
+            type="submit"
+            onClick={(e) => handleSubmit(e, 'Rejected')}
+            style={{ 
+              backgroundColor: '#dc3545', 
+              color: 'white',
+              padding: '10px 20px',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Reject
+          </button>
+        </div>
+      </form>
+
+      {error && (
+        <div style={{ 
+          color: '#dc3545', 
+          marginTop: '20px', 
+          padding: '10px', 
+          backgroundColor: '#f8d7da',
+          borderRadius: '4px'
+        }}>
+          {error}
+        </div>
+      )}
     </div>
   );
 };
 
 export default ApprovalScreen;
-
