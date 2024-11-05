@@ -21,6 +21,10 @@ const WeeklyCalendar = ({
   onWeekChange,
   initialStartDate 
 }) => {
+  const today = dayjs();
+  const minDate = today.subtract(2, 'month');
+  const maxDate = today.add(3, 'month');
+  
   const [selectedWeekStart, setSelectedWeekStart] = useState(() => {
     return initialStartDate ? dayjs(initialStartDate) : dayjs().startOf('week');
   });
@@ -62,35 +66,58 @@ const WeeklyCalendar = ({
   };
 
   // Navigation handlers
+  const isBackwardDisabled = () => {
+    // Get the first day of current week
+    const firstDayOfWeek = selectedWeekStart;
+    // Check if any day in the current week is before or equal to minDate
+    return firstDayOfWeek.isSame(minDate, 'day') || firstDayOfWeek.isBefore(minDate);
+  };
+
+  const isForwardDisabled = () => {
+    // Get the last day of current week
+    const lastDayOfWeek = selectedWeekStart.add(6, 'day');
+    // Check if any day in the current week is after or equal to maxDate
+    return lastDayOfWeek.isSame(maxDate, 'day') || lastDayOfWeek.isAfter(maxDate);
+  };
+
   const handlePrevWeek = () => {
+    if (isBackwardDisabled()) return;
+    
     const newWeekStart = selectedWeekStart.subtract(1, 'week');
     setSelectedWeekStart(newWeekStart);
     if (onWeekChange) {
       const startDate = newWeekStart.format('YYYY-MM-DD');
       const endDate = newWeekStart.endOf('week').format('YYYY-MM-DD');
-      console.log('Calling onWeekChange with:', { startDate, endDate }); // Debug log
       onWeekChange(startDate, endDate);
     }
   };
 
   const handleNextWeek = () => {
+    if (isForwardDisabled()) return;
+
     const newWeekStart = selectedWeekStart.add(1, 'week');
     setSelectedWeekStart(newWeekStart);
     if (onWeekChange) {
       const startDate = newWeekStart.format('YYYY-MM-DD');
       const endDate = newWeekStart.endOf('week').format('YYYY-MM-DD');
-      console.log('Calling onWeekChange with:', { startDate, endDate }); // Debug log
       onWeekChange(startDate, endDate);
     }
   };
 
   const handleDateChange = (newDate) => {
-    const newWeekStart = dayjs(newDate).startOf('week');
+    if (!newDate || !newDate.isValid()) return;
+    
+    // Check if date is within allowed range
+    if (newDate.isBefore(minDate) || newDate.isAfter(maxDate)) {
+      alert('Please select a date within 2 months before and 3 months after today');
+      return;
+    }
+
+    const newWeekStart = newDate.startOf('week');
     setSelectedWeekStart(newWeekStart);
     if (onWeekChange) {
       const startDate = newWeekStart.format('YYYY-MM-DD');
       const endDate = newWeekStart.endOf('week').format('YYYY-MM-DD');
-      console.log('Calling onWeekChange with:', { startDate, endDate }); // Debug log
       onWeekChange(startDate, endDate);
     }
   };
@@ -312,6 +339,11 @@ const WeeklyCalendar = ({
                       label={selectedWeekStart.format('MMMM YYYY')}
                       value={selectedWeekStart}
                       onChange={handleDateChange}
+                      minDate={minDate}
+                      maxDate={maxDate}
+                      shouldDisableDate={(date) => {
+                        return date.isBefore(minDate) || date.isAfter(maxDate);
+                      }}
                     />
                   </LocalizationProvider>
                   <TextField
@@ -328,12 +360,24 @@ const WeeklyCalendar = ({
                     }}
                     className="search-field"
                   />
-                  <IconButton onClick={handlePrevWeek}>
-                    <ArrowBackIcon />
-                  </IconButton>
-                  <IconButton onClick={handleNextWeek}>
-                    <ArrowForwardIcon />
-                  </IconButton>
+                   <IconButton 
+                      onClick={handlePrevWeek}
+                      disabled={isBackwardDisabled()}
+                      style={{ 
+                        color: isBackwardDisabled() ? 'rgba(0, 0, 0, 0.26)' : 'inherit'
+                      }}
+                    >
+                      <ArrowBackIcon />
+                    </IconButton>
+                    <IconButton 
+                      onClick={handleNextWeek}
+                      disabled={isForwardDisabled()}
+                      style={{ 
+                        color: isForwardDisabled() ? 'rgba(0, 0, 0, 0.26)' : 'inherit'
+                      }}
+                    >
+                      <ArrowForwardIcon />
+                    </IconButton>
                 </div>
               </TableCell>
             </TableRow>
