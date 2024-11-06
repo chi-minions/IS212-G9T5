@@ -115,12 +115,13 @@ const Sidebar = ({ staffRole }) => {
       return [...hrMenuItems, ...managerMenuItems, ...staffMenuItems];
     }
     if (staffRole === ROLES.MANAGER) {
-      return [managerMenuItems, ...staffMenuItems];
+      return [...managerMenuItems, ...staffMenuItems];
     }
     return staffMenuItems;
   };
 
   const renderMenuSection = (section) => (
+    console.log(section),
     <React.Fragment key={section.heading}>
       <Typography className="sidebar-heading">
         {section.heading}

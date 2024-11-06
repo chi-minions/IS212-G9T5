@@ -47,51 +47,52 @@ def manager_approve_adhoc():
         if request_status != "Pending":
             return jsonify({"error": f"Manager cannot approve or reject request with {request_status} status"}), 400
 
-        ###### head count check ######
-        employees_under_same_manager = Employee.query.filter_by(reporting_manager=reporting_manager_id).all()
-        total_employees = len(employees_under_same_manager)
-        
-        start_date = req["specific_date"]
-        is_am = req["is_am"]
-        is_pm = req["is_pm"]
+        if data["decision_status"] == "Approved":
+            ###### head count check ######
+            employees_under_same_manager = Employee.query.filter_by(reporting_manager=reporting_manager_id).all()
+            total_employees = len(employees_under_same_manager)
+            
+            start_date = req["specific_date"]
+            is_am = req["is_am"]
+            is_pm = req["is_pm"]
 
-        if is_am:
-            approved_am_requests = WFHRequests.query.filter(
-                and_(
-                    WFHRequests.staff_id.in_([emp.staff_id for emp in employees_under_same_manager]),
-                    WFHRequests.specific_date == start_date,
-                    WFHRequests.request_status.in_(['Approved', 'Pending_Withdraw']),
-                    WFHRequests.is_am == True  # Check for AM session
-                )
-            ).count()
+            if is_am:
+                approved_am_requests = WFHRequests.query.filter(
+                    and_(
+                        WFHRequests.staff_id.in_([emp.staff_id for emp in employees_under_same_manager]),
+                        WFHRequests.specific_date == start_date,
+                        WFHRequests.request_status.in_(['Approved', 'Pending_Withdraw']),
+                        WFHRequests.is_am == True  # Check for AM session
+                    )
+                ).count()
 
-            if total_employees > 0:
-                ratio_am = (approved_am_requests + 1) / total_employees
-            else:
-                ratio_am = 0
+                if total_employees > 0:
+                    ratio_am = (approved_am_requests + 1) / total_employees
+                else:
+                    ratio_am = 0
 
-            if ratio_am > 0.5:
-                return jsonify({"error": "Exceed 0.5 rule limit for AM session"}), 422
+                if ratio_am > 0.5:
+                    return jsonify({"error": "Exceed 0.5 rule limit for AM session"}), 422
 
-        if is_pm:
-            approved_pm_requests = WFHRequests.query.filter(
-                and_(
-                    WFHRequests.staff_id.in_([emp.staff_id for emp in employees_under_same_manager]),
-                    WFHRequests.specific_date == start_date,
-                    WFHRequests.request_status.in_(['Approved', 'Pending_Withdraw']),
-                    WFHRequests.is_pm == True  # Check for PM session
-                )
-            ).count()
+            if is_pm:
+                approved_pm_requests = WFHRequests.query.filter(
+                    and_(
+                        WFHRequests.staff_id.in_([emp.staff_id for emp in employees_under_same_manager]),
+                        WFHRequests.specific_date == start_date,
+                        WFHRequests.request_status.in_(['Approved', 'Pending_Withdraw']),
+                        WFHRequests.is_pm == True  # Check for PM session
+                    )
+                ).count()
 
-            if total_employees > 0:
-                ratio_pm = (approved_pm_requests + 1) / total_employees
-            else:
-                ratio_pm = 0
+                if total_employees > 0:
+                    ratio_pm = (approved_pm_requests + 1) / total_employees
+                else:
+                    ratio_pm = 0
 
-            if ratio_pm > 0.5:
-                return jsonify({"error": "Exceed 0.5 rule limit for PM session"}), 422
+                if ratio_pm > 0.5:
+                    return jsonify({"error": "Exceed 0.5 rule limit for PM session"}), 422
 
-         ###### end of head count check ######
+            ###### end of head count check ######
 
         new_req = update_request(request_id, start_date, {"request_status": data.get("decision_status")})
         if new_req is None:
@@ -132,56 +133,57 @@ def manager_approve_recurring():
         if not req:
             return jsonify({"error": "Request not found"}), 404
 
-        ####### Start of headcount check #######
-        staff_id = req["staff_id"]
-        employee = Employee.query.filter_by(staff_id=staff_id).first()
+        if data["decision_status"] == "Approved":
+            ####### Start of headcount check #######
+            staff_id = req["staff_id"]
+            employee = Employee.query.filter_by(staff_id=staff_id).first()
 
-        reporting_manager_id = employee.reporting_manager
+            reporting_manager_id = employee.reporting_manager
 
-        employees_under_same_manager = Employee.query.filter_by(reporting_manager=reporting_manager_id).all()
-        total_employees = len(employees_under_same_manager)
+            employees_under_same_manager = Employee.query.filter_by(reporting_manager=reporting_manager_id).all()
+            total_employees = len(employees_under_same_manager)
 
-        same_request = WFHRequests.query.filter_by(request_id=request_id).all()
+            same_request = WFHRequests.query.filter_by(request_id=request_id).all()
 
-        for arrangement in same_request:
-            arrangement_date = arrangement.specific_date
-            arrangement_is_am = arrangement.is_am
-            arrangement_is_pm = arrangement.is_pm
-            if arrangement_is_am:
-                approved_am_requests = WFHRequests.query.filter(
-                    and_(
-                        WFHRequests.staff_id.in_([emp.staff_id for emp in employees_under_same_manager]),
-                        WFHRequests.specific_date == arrangement_date,
-                        WFHRequests.request_status.in_(['Approved', 'Pending_Withdraw']),
-                        WFHRequests.is_am == True  # Check for AM session
-                    )
-                ).count()
+            for arrangement in same_request:
+                arrangement_date = arrangement.specific_date
+                arrangement_is_am = arrangement.is_am
+                arrangement_is_pm = arrangement.is_pm
+                if arrangement_is_am:
+                    approved_am_requests = WFHRequests.query.filter(
+                        and_(
+                            WFHRequests.staff_id.in_([emp.staff_id for emp in employees_under_same_manager]),
+                            WFHRequests.specific_date == arrangement_date,
+                            WFHRequests.request_status.in_(['Approved', 'Pending_Withdraw']),
+                            WFHRequests.is_am == True  # Check for AM session
+                        )
+                    ).count()
 
-                if total_employees > 0:
-                    ratio_am = (approved_am_requests + 1) / total_employees
-                else:
-                    ratio_am = 0
+                    if total_employees > 0:
+                        ratio_am = (approved_am_requests + 1) / total_employees
+                    else:
+                        ratio_am = 0
 
-                if ratio_am > 0.5:
-                    return jsonify({"error": "Exceed 0.5 rule limit for AM session"}), 422
+                    if ratio_am > 0.5:
+                        return jsonify({"error": "Exceed 0.5 rule limit for AM session"}), 422
 
-            if arrangement_is_pm:
-                approved_pm_requests = WFHRequests.query.filter(
-                    and_(
-                        WFHRequests.staff_id.in_([emp.staff_id for emp in employees_under_same_manager]),
-                        WFHRequests.specific_date == arrangement_date,
-                        WFHRequests.request_status.in_(['Approved', 'Pending_Withdraw']),
-                        WFHRequests.is_pm == True  # Check for PM session
-                    )
-                ).count()
+                if arrangement_is_pm:
+                    approved_pm_requests = WFHRequests.query.filter(
+                        and_(
+                            WFHRequests.staff_id.in_([emp.staff_id for emp in employees_under_same_manager]),
+                            WFHRequests.specific_date == arrangement_date,
+                            WFHRequests.request_status.in_(['Approved', 'Pending_Withdraw']),
+                            WFHRequests.is_pm == True  # Check for PM session
+                        )
+                    ).count()
 
-                if total_employees > 0:
-                    ratio_pm = (approved_pm_requests + 1) / total_employees
-                else:
-                    ratio_pm = 0
+                    if total_employees > 0:
+                        ratio_pm = (approved_pm_requests + 1) / total_employees
+                    else:
+                        ratio_pm = 0
 
-                if ratio_pm > 0.5:
-                    return jsonify({"error": "Exceed 0.5 rule limit for PM session"}), 422
+                    if ratio_pm > 0.5:
+                        return jsonify({"error": "Exceed 0.5 rule limit for PM session"}), 422
             
         for arrangement in same_request:
             arrangement_date = arrangement.specific_date
