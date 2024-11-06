@@ -115,7 +115,7 @@ const Sidebar = ({ staffRole }) => {
       return [...hrMenuItems, ...managerMenuItems, ...staffMenuItems];
     }
     if (staffRole === ROLES.MANAGER) {
-      return [managerMenuItems, ...staffMenuItems];
+      return [...managerMenuItems, ...staffMenuItems];
     }
     return staffMenuItems;
   };
