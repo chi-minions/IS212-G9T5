@@ -12,5 +12,11 @@
       "src": "/(.*)",
       "dest": "server.py"
     }
+  ],
+  "crons": [
+    {
+      "path": "/auto_reject",
+      "schedule": "0 0 * * *"
+    }
   ]
 }
