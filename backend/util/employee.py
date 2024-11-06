@@ -12,6 +12,7 @@ def get_full_team(rm_id):
     full_team = team.copy()  # To store the entire hierarchy
 
     ids = [employee.staff_id for employee in team if employee.role != 2]
+    print('ids', ids)
 
     while ids:
         current_rm_id = ids.pop()
@@ -20,8 +21,17 @@ def get_full_team(rm_id):
 
         # Add non-role 2 employees to the ids list for further exploration
         ids += [employee.staff_id for employee in subteam if employee.role != 2]
-
+        if current_rm_id == rm_id:
+            break
+    
+    print('full_team', full_team)
     return full_team
+
+def get_staff_below(rm_id):
+
+    team = Employee.query.filter_by(reporting_manager=rm_id).all()
+
+    return team
 
 def get_all_department_teams():
     all_employees = Employee.query.all()
