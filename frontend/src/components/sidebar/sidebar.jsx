@@ -93,21 +93,6 @@ const Sidebar = ({ staffRole }) => {
   // Manager-specific menu items
   const managerMenuItems = [
     {
-      heading: 'SCHEDULE',
-      items: [
-        {
-          text: 'Home',
-          icon: <Home className="sidebar-icon" />,
-          to: `/${staffId}/`
-        },
-        {
-          text: 'Team Schedule',
-          icon: <CalendarToday className="sidebar-icon" />,
-          to: `/${staffId}/3/schedule`
-        }
-      ]
-    },
-    {
       heading: 'APPROVAL MANAGEMENT',
       items: [
         {
@@ -122,40 +107,15 @@ const Sidebar = ({ staffRole }) => {
         }
       ]
     },
-    {
-      heading: 'APPLICATION',
-      items: [
-        {
-          text: 'My Requests',
-          icon: <Assignment className="sidebar-icon" />,
-          to: `/${staffId}/2/requests`
-        },
-        {
-          text: 'Apply',
-          icon: <ListAlt className="sidebar-icon" />,
-          to: `/${staffId}/2/wfh-request`
-        }
-      ]
-    },
-    {
-      heading: 'WITHDRAWAL',
-      items: [
-        {
-          text: 'Withdrawal',
-          icon: <School className="sidebar-icon" />,
-          to: `/${staffId}/2/withdrawal`
-        }
-      ]
-    }
   ];
 
   // Get relevant menu items based on role
   const getMenuItems = () => {
     if (staffRole === ROLES.HR) {
-      return [...hrMenuItems, ...staffMenuItems];
+      return [...hrMenuItems, ...managerMenuItems, ...staffMenuItems];
     }
     if (staffRole === ROLES.MANAGER) {
-      return managerMenuItems;
+      return [managerMenuItems, ...staffMenuItems];
     }
     return staffMenuItems;
   };
