@@ -47,8 +47,8 @@ class TestApp(flask_testing.TestCase):
         db.session.remove()
         db.drop_all()
 
-@patch('app.task.date')
-class TestStaffApply(TestApp):
+@patch('routes.cron.date')
+class TestCronJob(TestApp):
     def test_auto_reject_more_than_2mths(self, mock_date):
         mock_date.today.return_value = date(2024, 12, 12)
         wfh_request = WFHRequests(
@@ -66,12 +66,12 @@ class TestStaffApply(TestApp):
         db.session.add(wfh_request)
         db.session.commit()
 
-        from app.task import auto_reject
-        auto_reject()
+        response = self.client.get("/api/auto-reject")
 
         pending = WFHRequests.query.filter_by(request_status="Pending").all()
         cancelled = WFHRequests.query.filter_by(request_status="Cancelled").all()
 
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(cancelled[0].json(), {
             'request_id': "1",
             'staff_id': 140008,
@@ -102,12 +102,12 @@ class TestStaffApply(TestApp):
         db.session.add(wfh_request)
         db.session.commit()
 
-        from app.task import auto_reject
-        auto_reject()
+        response = self.client.get("/api/auto-reject")
 
         pending = WFHRequests.query.filter_by(request_status="Pending").all()
         cancelled = WFHRequests.query.filter_by(request_status="Cancelled").all()
 
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(pending[0].json(), {
             'request_id': "1",
             'staff_id': 140008,
@@ -138,12 +138,12 @@ class TestStaffApply(TestApp):
         db.session.add(wfh_request)
         db.session.commit()
 
-        from app.task import auto_reject
-        auto_reject()
+        response = self.client.get("/api/auto-reject")
 
         pending = WFHRequests.query.filter_by(request_status="Pending").all()
         cancelled = WFHRequests.query.filter_by(request_status="Cancelled").all()
 
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(pending[0].json(), {
             'request_id': "1",
             'staff_id': 140008,
