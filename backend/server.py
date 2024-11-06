@@ -14,9 +14,9 @@ from routes.manager_view import manager_view
 from routes.staff_cancel import staff_cancel
 from routes.cron import cron
 
-from app.utils import celery_init_app
-from app import task
-from celery.schedules import crontab
+# from app.utils import celery_init_app
+# from app import task
+# from celery.schedules import crontab
 
 load_dotenv()
 
@@ -26,34 +26,34 @@ def create_app():
     if os.getenv("TESTING") == "True":
         # Use SQLite for testing
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
-        CELERY_BROKER_URL = "redis://localhost:6379"
-        CELERY_RESULT_BACKEND = "redis://localhost:6379"
+        # CELERY_BROKER_URL = "redis://localhost:6379"
+        # CELERY_RESULT_BACKEND = "redis://localhost:6379"
         
     else:
         # Use PostgreSQL for production
         app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
-        CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
-        CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
+        # CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+        # CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config.from_mapping(
-        CELERY=dict(
-            broker_url=CELERY_BROKER_URL,
-            result_backend=CELERY_RESULT_BACKEND,
-            task_ignore_result=True,
-            beat_schedule={
-                # FOR TESTING
-                # "task-every-min": {
-                #     "task": "app.task.hello_world",
-                #     "schedule": crontab(minute='*'),
-                # },
-                "task-auto-rej-every-night-midnight": {
-                    "task": "app.task.auto_reject",
-                    "schedule": crontab(hour=0, minute=0),
-                }
-            },
-        ),
-    )
+    # app.config.from_mapping(
+    #     CELERY=dict(
+    #         broker_url=CELERY_BROKER_URL,
+    #         result_backend=CELERY_RESULT_BACKEND,
+    #         task_ignore_result=True,
+    #         beat_schedule={
+    #             # FOR TESTING
+    #             # "task-every-min": {
+    #             #     "task": "app.task.hello_world",
+    #             #     "schedule": crontab(minute='*'),
+    #             # },
+    #             "task-auto-rej-every-night-midnight": {
+    #                 "task": "app.task.auto_reject",
+    #                 "schedule": crontab(hour=0, minute=0),
+    #             }
+    #         },
+    #     ),
+    # )
 
     CORS(app, supports_credentials=True)
 
@@ -70,7 +70,7 @@ def create_app():
 
     db.init_app(app)
 
-    celery_init_app(app)
+    # celery_init_app(app)
 
     return app
 
