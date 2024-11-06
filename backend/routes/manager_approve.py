@@ -47,14 +47,14 @@ def manager_approve_adhoc():
         if request_status != "Pending":
             return jsonify({"error": f"Manager cannot approve or reject request with {request_status} status"}), 400
 
+        start_date = req["specific_date"]
+        is_am = req["is_am"]
+        is_pm = req["is_pm"]
+
         if data["decision_status"] == "Approved":
             ###### head count check ######
             employees_under_same_manager = Employee.query.filter_by(reporting_manager=reporting_manager_id).all()
             total_employees = len(employees_under_same_manager)
-            
-            start_date = req["specific_date"]
-            is_am = req["is_am"]
-            is_pm = req["is_pm"]
 
             if is_am:
                 approved_am_requests = WFHRequests.query.filter(
