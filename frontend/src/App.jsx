@@ -106,17 +106,17 @@ function AppContent() {
                   </ProtectedRoute>
                 } />
                 <Route path="wfh-request" element={
-                  <ProtectedRoute allowedRoles={[ROLES.STAFF, ROLES.MANAGER]} staffRole={staffRole}>
+                  <ProtectedRoute allowedRoles={[ROLES.STAFF, ROLES.MANAGER, ROLES.HR]} staffRole={staffRole}>
                     <WFHRequestForm staffId={staffId} />
                   </ProtectedRoute>
                 } />
                 <Route path="requests" element={
-                  <ProtectedRoute allowedRoles={[ROLES.STAFF, ROLES.MANAGER]} staffRole={staffRole}>
+                  <ProtectedRoute allowedRoles={[ROLES.STAFF, ROLES.MANAGER, ROLES.HR]} staffRole={staffRole}>
                     <StaffRequestsView staffId={staffId} />
                   </ProtectedRoute>
                 } />
                 <Route path="withdrawal" element={
-                  <ProtectedRoute allowedRoles={[ROLES.STAFF, ROLES.MANAGER]} staffRole={staffRole}>
+                  <ProtectedRoute allowedRoles={[ROLES.STAFF, ROLES.MANAGER, ROLES.HR]} staffRole={staffRole}>
                     <WithdrawalFormView staffId={staffId} />
                   </ProtectedRoute>
                 } />
@@ -125,27 +125,27 @@ function AppContent() {
               {/* Manager Routes (Role 3) */}
               <Route path="3">
                 <Route path="schedule" element={
-                  <ProtectedRoute allowedRoles={[ROLES.MANAGER]} staffRole={staffRole}>
+                  <ProtectedRoute allowedRoles={[ROLES.MANAGER, ROLES.HR]} staffRole={staffRole}>
                     <ManageerViewTeamSchedule staffId={staffId} />
                   </ProtectedRoute>
                 } />
                 <Route path="approval/:approval_req_id" element={
-                  <ProtectedRoute allowedRoles={[ROLES.MANAGER]} staffRole={staffRole}>
+                  <ProtectedRoute allowedRoles={[ROLES.MANAGER, ROLES.HR]} staffRole={staffRole}>
                     <ApprovalScreen />
                   </ProtectedRoute>
                 } />
                 <Route path="pending-requests" element={
-                  <ProtectedRoute allowedRoles={[ROLES.MANAGER]} staffRole={staffRole}>
+                  <ProtectedRoute allowedRoles={[ROLES.MANAGER, ROLES.HR]} staffRole={staffRole}>
                     <PendingRequests staffId={staffId} />
                   </ProtectedRoute>
                 } />
                 <Route path="withdrawal-requests" element={
-                  <ProtectedRoute allowedRoles={[ROLES.MANAGER]} staffRole={staffRole}>
+                  <ProtectedRoute allowedRoles={[ROLES.MANAGER, ROLES.HR]} staffRole={staffRole}>
                     <WithdrawalRequests/>
                   </ProtectedRoute>
                 } />
                 <Route path="withdrawal-approval/:approval_staff_id/:withdrawal_id" element={
-                  <ProtectedRoute allowedRoles={[ROLES.MANAGER]} staffRole={staffRole}>
+                  <ProtectedRoute allowedRoles={[ROLES.MANAGER, ROLES.HR]} staffRole={staffRole}>
                     <WithdrawalApprovalScreen />
                   </ProtectedRoute>
                 } />
