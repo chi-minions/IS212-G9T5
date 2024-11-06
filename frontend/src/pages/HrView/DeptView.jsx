@@ -46,11 +46,12 @@ const DeptView = () => {
         });
         const employeesData = await employeesResponse.json();
         
-        // Create a map of employee details
+        // Create a map of employee details, now including position
         const employeeMap = employeesData.reduce((acc, emp) => {
           acc[emp.staff_id] = {
             staff_fname: emp.staff_fname,
-            staff_lname: emp.staff_lname
+            staff_lname: emp.staff_lname,
+            position: emp.position // Add position to the employee details
           };
           return acc;
         }, {});
@@ -60,7 +61,8 @@ const DeptView = () => {
         // Add manager names to department data
         const managersWithDetails = deptData.map(manager => ({
           ...manager,
-          teamName: `Team of ${employeeMap[manager.staff_id]?.staff_fname || ''} ${employeeMap[manager.staff_id]?.staff_lname || ''}`
+          teamName: `Team of ${employeeMap[manager.staff_id]?.staff_fname || ''} ${employeeMap[manager.staff_id]?.staff_lname || ''}`,
+          position: employeeMap[manager.staff_id]?.position || 'Manager' // Add manager's position
         }));
 
         setDepartmentData(managersWithDetails);
@@ -111,7 +113,17 @@ const DeptView = () => {
         <ListItem key={member.staff_id}>
           <ListItemText
             primary={`${employeeDetail.staff_fname || ''} ${employeeDetail.staff_lname || ''} (ID: ${member.staff_id})`}
-            secondary={isWfh ? 'Working From Home' : 'In Office'}
+            secondary={
+              <React.Fragment>
+                <Typography component="span" variant="body2" color="textPrimary">
+                  {employeeDetail.position || 'Position not specified'}
+                </Typography>
+                <br />
+                <Typography component="span" variant="body2" color="textSecondary">
+                  {isWfh ? 'Working From Home' : 'In Office'}
+                </Typography>
+              </React.Fragment>
+            }
           />
         </ListItem>
       );
@@ -146,6 +158,9 @@ const DeptView = () => {
                 <Typography variant="h6">{team.teamName}</Typography>
                 <Typography variant="body2">
                   Team Size: {team.teamSize}
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  Position: {team.position}
                 </Typography>
                 <Button 
                   variant="outlined" 
@@ -182,6 +197,5 @@ const DeptView = () => {
 };
 
 export default DeptView;
-
 
 
