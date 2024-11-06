@@ -28,15 +28,67 @@ const HrCalendar = () => {
   const [selectedDepartments, setSelectedDepartments] = useState([]);
   const [filterAnchorEl, setFilterAnchorEl] = useState(null);
 
+  const isBackwardDisabled = currentDate.isBefore(dayjs().subtract(2, 'month').startOf('month'));
+  const isForwardDisabled = currentDate.isAfter(dayjs().add(3, 'month').endOf('month'));
+
+  const isDateOutOfRange = (date) => {
+    const twoMonthsAgo = dayjs().subtract(2, 'month');
+    const threeMonthsAhead = dayjs().add(3, 'month');
+    const dateToCheck = dayjs(date);
+    
+    // Always block dates before the currently selected date
+    if (dateToCheck.isBefore(currentDate, 'day')) {
+      return true;
+    }
+    
+    return dateToCheck.isBefore(twoMonthsAgo) || dateToCheck.isAfter(threeMonthsAhead);
+  };
+  
+  const isDateInRange = (date) => {
+    const minDate = dayjs().subtract(2, 'month').startOf('month');
+    const maxDate = dayjs().add(3, 'month').endOf('month');
+    return date.isBetween(minDate, maxDate, 'day', '[]');
+  };
+  
+  const isDateDisabled = (date) => {
+    const minDate = dayjs().subtract(2, 'month').startOf('month');
+    return dayjs(date).isBefore(minDate, 'day');
+  };
+
+
   const shifts = [
     { name: 'AM', time: '9:00 - 13:00' },
     { name: 'PM', time: '14:00 - 18:00' }
   ];
 
-  const weekDates = useMemo(() => 
-    Array.from({ length: 7 }, (_, i) => 
-      currentDate.startOf('week').add(i, 'day').format('YYYY-MM-DD')
-    ), [currentDate]);
+  const weekDates = useMemo(() => {
+    const startOfWeek = currentDate.startOf('week');
+    const twoMonthsAgo = dayjs().subtract(2, 'month');
+    const threeMonthsAhead = dayjs().add(3, 'month');
+    
+    // Get all dates in the week
+    const allDates = Array.from({ length: 7 }, (_, i) => startOfWeek.add(i, 'day'));
+    
+    // Find the first and last valid dates in this week
+    const firstValidDate = allDates.find(date => 
+      !date.isBefore(twoMonthsAgo) && !date.isAfter(threeMonthsAhead)
+    );
+    
+    const lastValidDate = [...allDates].reverse().find(date => 
+      !date.isBefore(twoMonthsAgo) && !date.isAfter(threeMonthsAhead)
+    );
+    
+    // If no valid dates found, return empty array
+    if (!firstValidDate || !lastValidDate) return [];
+    
+    // Return only the consecutive dates between first and last valid dates
+    return allDates
+      .filter(date => 
+        !date.isBefore(firstValidDate) && 
+        !date.isAfter(lastValidDate)
+      )
+      .map(date => date.format('YYYY-MM-DD'));
+  }, [currentDate]);
 
   // Fetch managers once when component mounts
   useEffect(() => {
@@ -199,35 +251,40 @@ const HrCalendar = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {shifts.map(shift => (
-              <TableRow key={shift.name}>
-                <TableCell className="shift-cell">
-                  {shift.name}<br />({shift.time})
-                </TableCell>
-                {weekDates.map((date) => (
-                  <TableCell key={`${dayjs(date).format('YYYY-MM-DD')}-${shift.name}`}>
-                    {departmentManagers && 
-                      Object.keys(departmentManagers)
-                        .filter(department => selectedDepartments.length === 0 || selectedDepartments.includes(department))
-                        .map(department => (
-                          <Button
-                            key={`${dayjs(date).format('YYYY-MM-DD')}-${department}`}
-                            variant="outlined"
-                            fullWidth
-                            onClick={() => handleDepartmentClick(department, date)} // date should be a string here
-                            style={{ textAlign: 'left', textTransform: 'none', display: 'block', marginBottom: '8px' }}
-                          >
-                            <AttendanceCell
-                              date={date} // This should already be a string from weekDates
-                              department={department}
-                            />
-                          </Button>
-                    ))}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
+  {shifts.map(shift => (
+    <TableRow key={shift.name}>
+      <TableCell className="shift-cell">
+        {shift.name}<br />({shift.time})
+      </TableCell>
+      {weekDates.map((date) => (
+        <TableCell key={date || `empty-${date}`}>
+          {date && departmentManagers && 
+            Object.keys(departmentManagers)
+              .filter(department => selectedDepartments.length === 0 || selectedDepartments.includes(department))
+              .map(department => (
+                <Button
+                  key={`${date}-${department}`}
+                  variant="outlined"
+                  fullWidth
+                  onClick={() => handleDepartmentClick(department, date)}
+                  style={{ 
+                    textAlign: 'left', 
+                    textTransform: 'none', 
+                    display: 'block', 
+                    marginBottom: '8px'
+                  }}
+                >
+                  <AttendanceCell
+                    date={date}
+                    department={department}
+                  />
+                </Button>
+              ))}
+        </TableCell>
+      ))}
+    </TableRow>
+  ))}
+</TableBody>
           <TableFooter>
             <TableRow>
               <TableCell colSpan={8}>
@@ -277,16 +334,41 @@ const HrCalendar = () => {
                     Today
                   </Button>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                      label={currentDate.format('MMMM YYYY')}
-                      value={currentDate}
-                      onChange={(newDate) => setCurrentDate(dayjs(newDate))}
-                    />
+                  <DatePicker
+                    label={currentDate.format('MMMM YYYY')}
+                    value={currentDate}
+                    onChange={(newDate) => setCurrentDate(dayjs(newDate))}
+                    minDate={dayjs().subtract(2, 'month')}
+                    maxDate={dayjs().add(3, 'month')}
+                    shouldDisableDate={(date) => {
+                      const dateToCheck = dayjs(date);
+                      
+                      // At 2-month past limit
+                      if (dayjs(currentDate).isSame(dayjs().subtract(2, 'month'), 'day')) {
+                        return dateToCheck.isBefore(currentDate);
+                      }
+                      
+                      // At 3-month future limit
+                      if (dayjs(currentDate).isSame(dayjs().add(3, 'month'), 'day')) {
+                        return dateToCheck.isAfter(currentDate);
+                      }
+                      
+                      return dateToCheck.isBefore(dayjs().subtract(2, 'month')) || 
+                            dateToCheck.isAfter(dayjs().add(3, 'month'));
+                    }}
+                  />
                   </LocalizationProvider>
-                  <IconButton onClick={() => setCurrentDate(prev => prev.subtract(1, 'week'))} sx={{ ml: 1 }}>
+                  <IconButton 
+                    onClick={() => setCurrentDate(prev => prev.subtract(1, 'week'))} 
+                    sx={{ ml: 1 }}
+                    disabled={isBackwardDisabled}
+                  >
                     <ArrowBackIcon />
                   </IconButton>
-                  <IconButton onClick={() => setCurrentDate(prev => prev.add(1, 'week'))}>
+                  <IconButton 
+                    onClick={() => setCurrentDate(prev => prev.add(1, 'week'))}
+                    disabled={isForwardDisabled}
+                  >
                     <ArrowForwardIcon />
                   </IconButton>
                 </div>
