@@ -1,5 +1,5 @@
 // WeeklyCalendar.jsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableFooter,
   Paper, Button, TextField, IconButton, InputAdornment, Box, Drawer, List, ListItem, ListItemText,
@@ -136,11 +136,35 @@ const WeeklyCalendar = ({
   };
 
   // Week dates calculation
-  const getWeekDates = (date) => {
-    return Array.from({ length: 7 }, (_, i) => date.add(i, 'day'));
-  };
+  // const getWeekDates = (date) => {
+  //   return Array.from({ length: 7 }, (_, i) => date.add(i, 'day'));
+  // };
 
-  const weekDates = getWeekDates(selectedWeekStart);
+  // const weekDates = getWeekDates(selectedWeekStart);
+
+  const weekDates = useMemo(() => {
+    const startOfWeek = selectedWeekStart.startOf('week');
+    const allDates = Array.from({ length: 7 }, (_, i) => startOfWeek.add(i, 'day'));
+    
+    // Find the first and last valid dates in this week
+    const firstValidDate = allDates.find(date => 
+      !date.isBefore(minDate) && !date.isAfter(maxDate)
+    );
+    
+    const lastValidDate = [...allDates].reverse().find(date => 
+      !date.isBefore(minDate) && !date.isAfter(maxDate)
+    );
+    
+    // If no valid dates found, return empty array
+    if (!firstValidDate || !lastValidDate) return [];
+    
+    // Return only the consecutive dates between first and last valid dates
+    return allDates
+      .filter(date => 
+        !date.isBefore(firstValidDate) && 
+        !date.isAfter(lastValidDate)
+      );
+  }, [selectedWeekStart, minDate, maxDate]);
 
   // Schedule display logic
   const getMySchedule = (date, shift) => {
@@ -337,16 +361,29 @@ const WeeklyCalendar = ({
                     Today
                   </Button>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker 
-                      label={selectedWeekStart.format('MMMM YYYY')}
-                      value={selectedWeekStart}
-                      onChange={handleDateChange}
-                      minDate={minDate}
-                      maxDate={maxDate}
-                      shouldDisableDate={(date) => {
-                        return date.isBefore(minDate) || date.isAfter(maxDate);
-                      }}
-                    />
+                  <DatePicker 
+                    label={selectedWeekStart.format('MMMM YYYY')}
+                    value={selectedWeekStart}
+                    onChange={handleDateChange}
+                    minDate={minDate}
+                    maxDate={maxDate}
+                    shouldDisableDate={(date) => {
+                      const dateToCheck = dayjs(date);
+                      
+                      // At 2-month past limit
+                      if (dayjs(selectedWeekStart).isSame(minDate, 'day')) {
+                        return dateToCheck.isBefore(selectedWeekStart);
+                      }
+                      
+                      // At 3-month future limit
+                      if (dayjs(selectedWeekStart).isSame(maxDate, 'day')) {
+                        return dateToCheck.isAfter(selectedWeekStart);
+                      }
+                      
+                      return dateToCheck.isBefore(minDate) || 
+                            dateToCheck.isAfter(maxDate);
+                    }}
+                  />
                   </LocalizationProvider>
                   <TextField
                     variant="outlined"
