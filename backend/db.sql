@@ -1,5 +1,4 @@
 -- Drop existing types
-DROP TYPE IF EXISTS request_type CASCADE;
 DROP TYPE IF EXISTS request_status CASCADE;
 DROP TYPE IF EXISTS decision_status CASCADE;
 
@@ -21,15 +20,15 @@ CREATE TABLE WFHRequests (
     request_id VARCHAR(36),
     specific_date DATE,
     staff_id INT,
-    Manager_id INT,
+    manager_id INT,
     is_am BOOLEAN,
     is_pm BOOLEAN,
     request_status request_status,
     apply_date DATE,
     request_reason TEXT,
     PRIMARY KEY (request_id, specific_date),
-    FOREIGN KEY (staff_id) REFERENCES employee(staff_ID),
-    FOREIGN KEY (Manager_id) REFERENCES employee(staff_ID)
+    FOREIGN KEY (staff_id) REFERENCES employee(staff_id),
+    FOREIGN KEY (manager_id) REFERENCES employee(staff_id)
 );
 
 -- RequestDecisions Table
@@ -42,7 +41,7 @@ CREATE TABLE RequestDecisions (
     decision_status decision_status,
     decision_notes TEXT,
     FOREIGN KEY (request_id, specific_date) REFERENCES WFHRequests(request_id, specific_date),
-    FOREIGN KEY (manager_id) REFERENCES employee(staff_ID)
+    FOREIGN KEY (manager_id) REFERENCES employee(staff_id)
 );
 
 -- WithdrawDecisions Table
@@ -55,7 +54,7 @@ CREATE TABLE WithdrawDecisions (
     decision_status decision_status,
     decision_notes TEXT,
     FOREIGN KEY (request_id, specific_date) REFERENCES WFHRequests(request_id, specific_date),
-    FOREIGN KEY (manager_id) REFERENCES employee(staff_ID)
+    FOREIGN KEY (manager_id) REFERENCES employee(staff_id)
 );
 
 -- WFHRequestLogs Table
