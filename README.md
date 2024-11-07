@@ -30,28 +30,50 @@ You can use the following Staff IDs to test different roles and access levels:
 git clone https://github.com/nlcchi/IS212-G9T5.git
 ```
 
-2. Set up Python virtual environment (MacOS)
+2. Set up environment variables
 ```bash
+cp .env.sample .env.local
+```
+
+3. Set up Python virtual environment (MacOS)
+```bash
+cd backend
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-3. Install Python dependencies
+4. Install Python dependencies
 ```bash
+cd backend
 pip install -r requirements.txt
 ```
 
-4. Set up and run frontend
+5. Set up local database
+- Update `DATABASE_URL` in `.env`
+- Run SQL script in `backend/db.sql`
+
+6. Set up and run frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-5. Set up and run backend
+7. Load CSV data and run backend
+- Change `TESTING` value in `.env` to `"False"`
+```bash
+cd backend/util
+python3 load_csv.py
+
+cd ../
+python3 server.py
+```
+
+8. Run tests locally
+- Change `TESTING` value in `.env` to `"True"` 
 ```bash
 cd backend
-python3 server.py
+python3 -m unittest discover -s tests
 ```
 
 ## Project Structure
@@ -59,7 +81,6 @@ python3 server.py
 IS212-G9T5/
 ├── frontend/          # React frontend application
 ├── backend/           # Python backend server
-├── requirements.txt   # Python dependencies
 └── README.md         # Project documentation
 ```
 
