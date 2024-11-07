@@ -38,44 +38,6 @@ class TestApp(flask_testing.TestCase):
             role=1
         )
 
-        wfh_request1 = WFHRequests(
-            request_id="REQ001",  # Added request_id
-            staff_id=140008,
-            manager_id=140001,
-            specific_date=datetime.date(2024, 9, 15),
-            is_am=True,
-            is_pm=True,
-            request_status='Approved',
-            apply_date=datetime.date(2024, 9, 30),
-            request_reason="Sick"
-        )
-        
-        wfh_request2 = WFHRequests(
-            request_id="REQ002",  # Added request_id
-            staff_id=140008,
-            manager_id=140001,
-            specific_date=datetime.date(2024, 10, 1),
-            is_am=True,
-            is_pm=True,
-            request_status='Pending',
-            apply_date=datetime.date(2024, 9, 30),
-            request_reason="Sick"
-        )
-
-        db.session.add(employee)
-        db.session.add(manager)
-        db.session.add(wfh_request1)
-        db.session.add(wfh_request2)
-        db.session.commit()
-
-    def tearDown(self):
-        db.session.remove()
-        db.drop_all()
-
-class TestGetRequest(TestApp):
-    def setUp(self):
-        super().setUp()
-        # Add a recurring request
         recurring_request1 = WFHRequests(
             request_id="REC123",  # Using consistent request_id for recurring requests
             staff_id=140008,
@@ -113,11 +75,19 @@ class TestGetRequest(TestApp):
             request_reason="Doctor's Appointment"
         )
 
+
+        db.session.add(employee)
+        db.session.add(manager)
         db.session.add(recurring_request1)
         db.session.add(recurring_request2)
         db.session.add(single_request)
         db.session.commit()
 
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+
+class TestGetRequest(TestApp):
     def test_get_recurring_request(self):
         """Test getting a recurring request returns all associated dates"""
         response = self.client.get("/api/request/REC123", 
@@ -177,88 +147,58 @@ class TestGetRequest(TestApp):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.get_json(), {"error": "Request not found"})
 
+    def test_get_pending_request(self):
+        response = self.client.get("/api/140008/pending", 
+                                 content_type='application/json')
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {
+            'data': [
+                {'apply_date': '2024-10-15', 
+                 'is_am': True, 
+                 'is_pm': True, 
+                 'manager_id': 140001, 
+                 'request_id': 'REC123', 
+                 'request_reason': 'Regular WFH', 
+                 'request_status': 'Pending', 
+                 'specific_date': '2024-11-01', 
+                 'staff_id': 140008
+                 }, 
+                 {'apply_date': '2024-10-15', 
+                  'is_am': True, 
+                  'is_pm': True, 
+                  'manager_id': 140001, 
+                  'request_id': 'REC123', 
+                  'request_reason': 'Regular WFH', 
+                  'request_status': 'Pending', 
+                  'specific_date': '2024-11-08', 
+                  'staff_id': 140008
+                  }, 
+                {'apply_date': '2024-09-30', 
+                 'is_am': True, 
+                 'is_pm': False, 
+                 'manager_id': 140001, 
+                 'request_id': 'SINGLE456', 
+                 'request_reason': "Doctor's Appointment", 
+                 'request_status': 'Pending', 
+                 'specific_date': '2024-10-01', 
+                 'staff_id': 140008}
+                 ]})
+        
+    def test_get_pending_request_invalid_employee(self):
+        response = self.client.get("/api/0/pending", 
+                                 content_type='application/json')
+        
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.get_json(), {"error": "Staff not found"})
+
+    def test_get_pending_request_no_pending(self):
+        response = self.client.get("/api/140001/pending", 
+                                 content_type='application/json')
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"data": []})
+
 if __name__ == '__main__':
     unittest.main()
-
-# class TestStaffRequests(TestApp):
-#     def test_staff_requests(self):
-#         response = self.client.get("/api/140008", content_type='application/json')
-        
-#         self.assertEqual(response.status_code, 200)
-#         self.assertEqual(response.get_json()["data"], [{
-#                 'request_id': 1,
-#                 'staff_id': 140008,
-#                 'manager_id': 140001,
-#                 'request_type': 'Ad-hoc',
-#                 'start_date': "2024-09-15",
-#                 'end_date': "2024-09-15",
-#                 'recurrence_days': None,
-#                 'is_am': True,
-#                 'is_pm': True,
-#                 "request_status": "Approved",
-#                 'apply_date': "2024-09-30",
-#                 'withdraw_reason': None,
-#                 'request_reason': "Sick"
-#                 }, {
-#                 'request_id': 2,
-#                 'staff_id': 140008,
-#                 'manager_id': 140001,
-#                 'request_type': 'Ad-hoc',
-#                 'start_date': "2024-10-01",
-#                 'end_date': "2024-10-01",
-#                 'recurrence_days': None,
-#                 'is_am': True,
-#                 'is_pm': True,
-#                 "request_status": "Pending",
-#                 'apply_date': "2024-09-30",
-#                 'withdraw_reason': None,
-#                 'request_reason': "Sick"
-#                 }]
-#             )
-        
-#     def test_staff_no_requests(self):
-#         response = self.client.get("/api/140001", content_type='application/json')
-        
-#         self.assertEqual(response.status_code, 200)
-#         self.assertEqual(response.get_json()["data"], [])
-
-#     def test_invalid_staff(self):
-#         response = self.client.get("/api/0", content_type='application/json')
-        
-#         self.assertEqual(response.status_code, 404)
-#         self.assertEqual(response.get_json(), {"error": "Staff not found"})
-
-#     def test_staff_pending(self):
-#         response = self.client.get("/api/140008/pending", content_type='application/json')
-        
-#         self.assertEqual(response.status_code, 200)
-#         self.assertEqual(response.get_json()["data"], [{
-#                 'request_id': 2,
-#                 'staff_id': 140008,
-#                 'manager_id': 140001,
-#                 'request_type': 'Ad-hoc',
-#                 'start_date': "2024-10-01",
-#                 'end_date': "2024-10-01",
-#                 'recurrence_days': None,
-#                 'is_am': True,
-#                 'is_pm': True,
-#                 "request_status": "Pending",
-#                 'apply_date': "2024-09-30",
-#                 'withdraw_reason': None,
-#                 'request_reason': "Sick"
-#                 }]
-#             )
-    
-#     def test_staff_no_pending(self):
-#         response = self.client.get("/api/140001/pending", content_type='application/json')
-        
-#         self.assertEqual(response.status_code, 200)
-#         self.assertEqual(response.get_json()["data"], [])
-
-#     def test_invalid_staff_pending(self):
-#         response = self.client.get("/api/0/pending", content_type='application/json')
-        
-#         self.assertEqual(response.status_code, 404)
-#         self.assertEqual(response.get_json(), {"error": "Staff not found"})
-
 
