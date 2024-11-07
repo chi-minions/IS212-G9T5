@@ -9,7 +9,6 @@ cron = Blueprint('cron', __name__)
 @cron.route("/api/auto-reject")
 def auto_reject():
     try:
-        print("Auto-reject route hit") 
         curr_date = date.today()
         two_months_ago = curr_date - relativedelta(months=2)
 

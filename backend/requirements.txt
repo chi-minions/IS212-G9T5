@@ -6,5 +6,3 @@ python-dotenv
 psycopg2-binary
 axios
 flask-testing
-celery 
-redis
