@@ -37,8 +37,6 @@ def manager_approve_adhoc():
         if not manager:
             return jsonify({"error": f"Reporting manager for employee {staff_id} not found"}), 404
         
-        print((employee.reporting_manager))
-        print((data["manager_id"]))
         if str(employee.reporting_manager) != str(reporting_manager_id): #checks if managerid from payload is the manager of employee
             return jsonify({"error": f"Employee {staff_id} reports under {employee.reporting_manager} instead of {reporting_manager_id}"}), 400
         

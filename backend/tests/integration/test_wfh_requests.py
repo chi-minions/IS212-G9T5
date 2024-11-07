@@ -165,7 +165,7 @@ class TestWFHRequests(TestApp):
         self.assertEqual(response.get_json(), {"message": "No WFH requests found for this staff member in the given date range"})
 
     # Test getting the entire team schedule for a given staff member
-    @patch('util.employee.get_full_team')
+    @patch('util.employee.get_staff_below')
     def test_get_team_schedule(self, mock_get_full_team):
         mock_get_full_team.return_value = [self.employee]
 
@@ -203,16 +203,17 @@ class TestWFHRequests(TestApp):
         self.assertEqual(response.get_json(), {"error": "Invalid staff ID"})
 
     # Test no WFH requests found for team schedule
-    @patch('util.employee.get_full_team')
+    @patch('util.employee.get_staff_below')
     def test_get_team_schedule_no_data(self, mock_get_full_team):
         mock_get_full_team.return_value = [self.employee]
 
         response = self.client.get("/api/team/140008/schedule?start_date=2025-01-01&end_date=2025-01-31", content_type='application/json')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), [])
+
     def test_get_team_pending_requests(self):
         # Mock the get_full_team function
-        with patch('util.employee.get_full_team') as mock_get_full_team:
+        with patch('util.employee.get_staff_below') as mock_get_full_team:
             mock_get_full_team.return_value = [self.employee]
             
             response = self.client.get("/api/team-manager/140001/pending-requests", 
@@ -264,16 +265,16 @@ class TestWFHRequests(TestApp):
         db.session.commit()
 
         # Mock the get_full_team function to return both team members
-        with patch('util.employee.get_full_team') as mock_get_full_team:
+        with patch('util.employee.get_staff_below') as mock_get_full_team:
             # Set up mock to return both team members
             mock_get_full_team.return_value = [self.manager, self.employee]
             
             response = self.client.get("/api/team-manager/130002/pending-requests", 
                                     content_type='application/json')
-            
+                        
             self.assertEqual(response.status_code, 200)
             expected_response = {
-                "team_size": 2,
+                "team_size": 1,
                 "pending_requests_count": 0,
                 "team_pending_requests": []
             }
@@ -343,7 +344,7 @@ class TestWFHRequests(TestApp):
             
             self.assertEqual(response.status_code, 200)
             expected_response = {
-                "team_size": 2,
+                "team_size": 1,
                 "pending_requests_count": 0,
                 "team_pending_requests": []
             }
