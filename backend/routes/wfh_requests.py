@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from models import *
 from datetime import datetime, timedelta
-from util.employee import get_full_team, get_staff_below
+from util.employee import get_staff_below
 
 dates = Blueprint('dates', __name__)
 
@@ -87,7 +87,6 @@ def get_team_schedule(staff_id):
     reporting_manager_id = staff_member.reporting_manager
 
     # Get the full team under the reporting manager
-    # team = get_full_team(reporting_manager_id)
     team = get_staff_below(reporting_manager_id)
 
     # Prepare the schedule for each team member
@@ -128,7 +127,7 @@ def get_team_schedule(staff_id):
 @dates.route("/api/team-manager/<int:manager_id>/pending-requests", methods=["GET"])
 def get_team_pending_requests(manager_id):
     # Get the full team under the given manager
-    team = get_full_team(manager_id)
+    team = get_staff_below(manager_id)
 
     # Prepare the pending requests for each team member
     team_pending_requests = []
@@ -170,7 +169,7 @@ def get_team_pending_requests(manager_id):
 @dates.route("/api/team-manager/<int:manager_id>/pending-requests-withdraw", methods=["GET"])
 def get_team_pending_withdraw_requests(manager_id):
     # Get the full team under the given manager
-    team = get_full_team(manager_id)
+    team = get_staff_below(manager_id)
 
     # Prepare the pending requests for each team member
     team_pending_requests = []

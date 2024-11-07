@@ -157,5 +157,21 @@ class TestCronJob(TestApp):
             })
         self.assertEqual(cancelled, [])
 
+    @patch('routes.cron.WFHRequests.query.filter')
+    @patch('routes.cron.db.session.rollback')
+    def auto_reject_exception(self, mock_filter, mock_rollback):
+        mock_filter.side_effect = Exception("Database connection error")
+
+        with app.test_client() as client:
+            response = client.get('/api/auto-reject')
+
+        # Assert that the rollback was called
+        mock_rollback.assert_called_once()
+
+        # Assert the response
+        self.assertEqual(response.status_code, 500)
+        self.assertIn(b"Database connection error", response.data)
+
+
 if __name__ == '__main__':
     unittest.main()
